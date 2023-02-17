@@ -1,0 +1,14 @@
+Isolate	AMB	ANI	MIF	CAS	5FC	POS	VRC	ITR	FLC	antifungal_susceptibility	genes_resistance
+CMRL-1	0.5	0.03	< 0.008	0.12	< 0.06	0.5	0.12	0.25	8	susceptible_all	-
+CMRL-2	0.5	1	1	8	< 0.06	0.25	0.06	0.12	4	echinocandin_resistant	FKS1
+CMRL-3	0.25	0.015	0.015	0.12	< 0.06	1	0.25	0.5	8	susceptible_all	-
+CMRL-4	2	1	1	> 8	< 0.06	0.5	0.12	0.25	8	echinocandin_resistant	FKS2
+CMRL-5	1	0.12	0.015	0.12	< 0.06	1	0.5	0.5	16	susceptible_all	-
+CMRL-6	1	0.06	0.015	0.06	> 64	> 8	8	> 16	256	5FC_azole_resistant	FCY2,CgPDR1,CgCDR1
+CMRL-7	0.25	0.06	0.015	0.25	< 0.06	1	8	0.5	256	azole_resistant	CgPDR1,CgCDR1,CgFLR1
+CMRL-8	0.5	0.03	0.008	0.06	< 0.06	0.5	0.25	0.25	4	susceptible_all	-
+CMRL-9	1	0.03	0.015	0.25	< 0.06	1	0.5	1	16	susceptible_all	-
+CMRL-10	1	0.03	< 0.008	0.5	< 0.06	1	0.5	0.5	16	susceptible_all	-
+CMRL-11	0.5	0.03	< 0.008	0.03	< 0.06	0.5	0.25	0.5	8	susceptible_all	-
+CMRL-12	0.5	0.03	0.015	0.06	< 0.06	> 8	2	8	128	azole_resistant	CgPDR1,CgCDR1,CgFLR1
+ATCC_90030	1	0.03	0.015	0.06	< 0.06	1	0.5	0.5	8	susceptible_all	-

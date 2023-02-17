@@ -1,0 +1,8 @@
+Isolate	Patient	Overseas_hospitalization	Year	Isolation_source	Clade	FLC_MIC	VRC_MIC	ITR_MIC	POS_MIC	CAS_MIC	ANI_MIC	MIF_MIC	AMB_MIC	5FC_MIC	ERG11	FKS1
+ca01	1	Local/yes	2012	Femur tissue	South Asian	256 (R)	1 (NA)	0.25 (NA)	0.06 (NA)	≥ 8 (R)	0.5 (S)	0.25 (S)	2 (R)	0.25 (NA)	Y132F	ND
+ca02	2	Foreigner/unknown	2015	Blood	South Asian	> 256 (R)	1 (NA)	0.25 (NA)	0.12 (NA)	0.25 (S)	0.25 (S)	0.12 (S)	2 (R)	0.12 (NA)	K143R	ND
+ca03	3	Foreigner/yes	2016	Blood	South Asian	> 256 (R)	1 (NA)	0.12 (NA)	0.06 (NA)	0.06 (S)	0.12 (S)	0.12 (S)	2 (R)	≤ 0.06 (NA)	Y132F	ND
+ca04	4	Foreigner/yes	2017	Blood	South Asian	256 (R)	2 (NA)	0.12 (NA)	0.06 (NA)	0.12 (S)	0.12 (S)	0.06 (S)	1 (S)	≤ 0.06 (NA)	Y132F	ND
+ca05	5	Foreigner/yes	2018	Blood	South American	8 (S)	0.06 (NA)	0.25 (NA)	0.06 (NA)	0.25 (S)	0.25 (S)	0.12 (S)	4 (R)	≤ 0.06 (NA)	ND	ND
+ca06	6	Foreigner/unknown	2018	Scrotal wound	South Asian	256 (R)	2 (NA)	0.5 (NA)	0.25 (NA)	0.12 (S)	0.12 (S)	0.12 (S)	1 (S)	≤ 0.06 (NA)	K143R	ND
+ca07	7	Local/no	2018	Ear swab	East Asian	8 (S)	0.06 (NA)	0.06 (NA)	0.015 (NA)	0.25 (S)	0.12 (S)	0.06 (S)	1 (S)	0.5 (NA)	ND	ND

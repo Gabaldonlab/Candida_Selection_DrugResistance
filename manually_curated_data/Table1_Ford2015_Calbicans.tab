@@ -1,0 +1,44 @@
+Publication name	PT	Strain	Entry date	Drug treatment	Dose	E-test MIC (ug/mL)	Depth of coverage	Reads	Percent aligned
+White, T.C.	1	1	9/10/90	Fluconazole	100	0.25	111.96	9,896,468	87.17%
+White, T.C.	1	2	12/14/90	Fluconazole	100	1	69.20	12,797,328	87.43%
+White, T.C.	1	3	12/21/90	Fluconazole	100	4	92.04	16,987,814	86.87%
+White, T.C.	1	4	12/31/90	Fluconazole	100	3	80.69	14,858,710	87.81%
+White, T.C.	1	5	2/8/91	Fluconazole	100	4	110.80	20,484,584	86.75%
+White, T.C.	1	6	2/22/91	Fluconazole	100	4	101.94	18,837,954	86.63%
+White, T.C.	1	7	3/25/91	Fluconazole	100	4	81.65	15,123,020	86.66%
+White, T.C.	1	8	4/8/91	Fluconazole	100	4	112.53	20,778,562	86.64%
+White, T.C.	1	9	6/4/91	Fluconazole	100	4	113.18	22,223,228	83.20%
+White, T.C.	1	11	7/15/91	Fluconazole	100	4	53.28	9,896,468	87.17%
+White, T.C.	1	12	11/26/91	Fluconazole	200	4	96.10	18,282,472	85.54%
+White, T.C.	1	13	12/13/91	Fluconazole	400	32	123.67	22,070,518	89.13%
+White, T.C.	1	14	1/28/92	Fluconazole	400	24	98.66	18,114,916	87.41%
+White, T.C.	1	15	2/21/92	Clotriminazole	50	24	120.90	22,401,374	86.57%
+White, T.C.	1	16	4/1/92	Fluconazole	400	96	87.44	16,061,560	87.17%
+White, T.C.	1	17	8/25/92	Fluconazole	800	96	97.83	18,317,118	85.91%
+Perea, S. et al.	7	412	2/15/95	Fluconazole	0	0.25	93.15	17,417,588	86.69%
+Perea, S. et al.	7	2307	11/22/95	Fluconazole	400	0.75	95.79	18,014,242	85.25%
+Perea, S. et al.	9	1002	4/20/95	Fluconazole	100	0.125	188.49	34,834,970	86.74%
+Perea, S. et al.	9	2823	4/6/96	Fluconazole	800		282.62	52,839,288	86.30%
+Perea, S. et al.	9	3795	2/26/97	Fluconazole	800	128	77.63	13,901,062	88.78%
+Perea, S. et al.	14	580	3/13/95	Fluconazole	0	1.5	77.08	14,711,804	85.00%
+Perea, S. et al.	14	2440	1/3/96	Fluconazole	800	1.5	82.93	15,446,882	85.69%
+Perea, S. et al.	14	2501	1/4/96	Fluconazole	800	96	88.59	17,480,274	81.98%
+Perea, S. et al.	15	945	4/14/95	Fluconazole	300	4	108.59	20,591,044	85.19%
+Perea, S. et al.	15	1619	7/11/95	Fluconazole	500	64	93.14	17,565,080	84.69%
+Perea, S. et al.	16	3107	6/5/96	Fluconazole	800	4	97.01	18,361,266	84.84%
+Perea, S. et al.	16	3119	6/5/96	Fluconazole	800	96	87.92	16,615,462	84.67%
+Perea, S. et al.	16	3120	6/5/96	Fluconazole	800	96	105.95	19,442,016	86.79%
+Perea, S. et al.	16	3184	7/1/96	Fluconazole	800		101.89	18,487,462	87.50%
+Perea, S. et al.	16	3281	7/16/96	Fluconazole	800		76.44	14,327,376	85.69%
+Perea, S. et al.	30	5106	1/7/98	Fluconazole	800	0.5	87.21	16,466,524	84.67%
+Perea, S. et al.	30	5108	1/7/98	Fluconazole	800	0.75	82.32	17,480,274	81.98%
+Perea, S. et al.	42	1691	8/3/95	Fluconazole	100		122.60	22,072,562	88.38%
+Perea, S. et al.	42	3731	12/27/96	Fluconazole	400	256	119.90	21,436,034	88.72%
+Perea, S. et al.	42	3733	12/27/96	Fluconazole	400	256	95.51	17,295,888	88.00%
+Perea, S. et al.	43	1649	7/19/95	Fluconazole	0	0.125	102.10	19,545,530	84.08%
+Perea, S. et al.	43	3034	5/15/96	Fluconazole	400	0.75	92.97	17,300,040	85.64%
+Perea, S. et al.	59	3917	2/19/97	Fluconazole	800	2	113.27	21,549,704	83.86%
+Perea, S. et al.	59	4617	8/28/97	Fluconazole	400	64	75.37	15,242,904	81.42%
+Perea, S. et al.	59	4639	9/2/97	Fluconazole	400	128	115.32	25,468,190	75.69%
+Perea, S. et al.	64	4018	4/2/97	Fluconazole	200		110.16	20,118,736	86.78%
+Perea, S. et al.	64	4380	7/14/97	Fluconazole	200		18.03	20,970,946	9.26%

@@ -1,0 +1,5 @@
+strain	FLC_MIC_24	FLC_MIC	VRC_MIC_24	VRC_MIC	POS_MIC_24	POS_MIC	ITR_MIC_24	ITR_MIC	CAS_MIC_24	CAS_MIC	ANI_MIC_24	ANI_MIC	MIF_MIC_24	MIF_MIC	type	source	treatment	timepoint
+CLIB 214	1	1	0.031	0.031	0.031	0.031	0.062	0.25	2	2	1	1	1	1	clinical	unknown	unknown	1
+CASEVO	1	2	0.031	0.031	0.031	0.031	0.125	0.25	16	16	4	8	16	16	invitro_evol_clone	inVitro_evolution	CAS	2
+ANDEVO	1	1	0.031	0.031	0.031	0.031	0.062	0.125	16	16	16	16	16	16	invitro_evol_clone	inVitro_evolution	ANI	2
+MICEVO	1	1	0.031	0.031	0.031	0.031	0.062	0.125	2	2	4	4	16	16	invitro_evol_clone	inVitro_evolution	MIF	2

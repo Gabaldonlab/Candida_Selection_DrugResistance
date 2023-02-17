@@ -1,0 +1,19 @@
+Isolate_ID	Country	Clade	Body_Site	Date	AMB_MIC	5FC_MIC	FLC_MIC	ITR_MIC	VRC_MIC	POS_MIC	ANI_MIC	MIF_MIC	CAS_MIC	patient_ID
+WM_18.181	Australia	III	Wound swab PICC site	05.09.2018	1	0.12	256	0.25	2	0.12	0.25	0.12	0.12	1
+WM_18.182	Australia	III	Sputum	05.09.2018	1	0.12	256	0.25	2	0.12	0.25	0.12	0.25	1
+WM_18.187	Australia	III	Axilla swab	06.09.2018	1	0.12	256	0.25	2	0.12	0.5	0.12	0.25	1
+WM_18.188	Australia	III	Sputum	07.09.2018	1	0.25	256	0.5	4	0.25	0.25	0.06	0.12	1
+WM_18.189	Australia	III	Axilla swab	11.09.2018	1	0.12	256	0.25	2	0.12	0.25	0.12	0.25	1
+WM_18.177	Australia	III	Blood culture	July 2018	1	0.12	256	0.5	2	0.12	0.25	0.12	0.12	1
+WM_18.190	Australia	III	Groin	11.09.2018	1	0.12	256	0.25	2	0.12	0.25	0.12	0.25	1
+WM_18.180	Australia	III	Nose swab	20.09.2018	1	0.12	512	0.25	2	0.12	0.25	0.12	0.25	2
+WM_18.197	Australia	III	Throat	08.11.2018	1	0.12	256	0.5	2	0.12	0.25	0.12	0.25	3
+WM_18.176	Australia	III	Sternal bone	2015	1	0.06	512	1	1	0.12	0.5	0.5	0.5	4
+WM_18.178	South Africa	III	Blood culture	2017	0.5	0.12	512	0.5	4	0.25	0.12	0.06	0.06	5
+WM_18.179	South Africa	III	Blood culture	2017	1	0.12	256	0.25	1	0.12	0.25	0.12	0.12	6
+WM_18.173	India	I	Blood culture	Unknown	1	0.03	64	0.25	1	0.03	0.25	0.12	16	7
+WM_18.174	India	I	Blood culture	Unknown	2	0.03	64	0.12	0.5	0.03	0.5	0.12	16	8
+WM_18.175	India	I	Blood culture	Unknown	2	0.03	128	0.12	0.5	0.03	0.25	0.25	0.5	9
+WM_18.194	India	I	Blood culture	Unknown	2	0.12	32	0.32	0.25	0.008	16	16	2	10
+WM_18.195	India	I	Blood culture	Unknown	2	0.12	512	0.25	1	0.12	0.25	0.12	0.12	11
+WM_18.196	India	I	Blood culture	Unknown	2	0.12	256	0.25	1	0.25	0.25	0.12	0.12	12
