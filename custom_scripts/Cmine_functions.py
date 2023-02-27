@@ -33338,7 +33338,14 @@ def get_Table_GroupsGWAS(df_gwas_filt, DataDir, ProcessedDataDir, TablesDir, gen
                 for ns, ns_name in [("BP", "biological_process"), ("MF", "molecular_function"), ("CC", "cellular_component")]:
                     gene_to_GOids = ns_to_gene_to_GOids[ns]
                     for g in all_alt_genes.difference(set(gene_to_GOids)): gene_to_GOids[g] = set()
+
+                    # add
                     df_drug["%s_GO"%(ns_name)] = df_drug.set_altered_genes.apply(lambda genes: "\n".join([", ".join(["%s (%s)"%(go, obodag[go].name) for go in sorted(gene_to_GOids[g])]) for g in genes]))
+
+            else:
+                for ns, ns_name in [("BP", "biological_process"), ("MF", "molecular_function"), ("CC", "cellular_component")]:
+                    df_drug["%s_GO"%(ns_name)] = ""
+
 
             gwas_results_df = gwas_results_df.append(df_drug).reset_index(drop=True)
 
@@ -37893,7 +37900,7 @@ def get_df_all_vars_only_positions_close_to_significant_vars(df_all_vars, ld_blo
 
     return df_all_vars
 
-def get_figure_GWAS_significant_vars_on_trees(DataDir, ProcessedDataDir, PlotsDir, spp_drug_to_gwas_df_file, threads, species_to_ref_genome, filters_df, df_manhattan, metadata_df, gene_features_df):
+def get_figure_GWAS_significant_vars_on_trees(DataDir, ProcessedDataDir, PlotsDir, spp_drug_to_gwas_df_file, threads, species_to_ref_genome, filters_df, df_manhattan_all, metadata_df, gene_features_df):
 
     """Makes one tree for each species"""
 
@@ -37901,7 +37908,7 @@ def get_figure_GWAS_significant_vars_on_trees(DataDir, ProcessedDataDir, PlotsDi
     make_folder(ProcessedDataDir)
 
     # load the manhattan plot for SNPs
-    df_manhattan = df_manhattan[df_manhattan.type_var=="SNP"]
+    df_manhattan = df_manhattan_all[df_manhattan_all.type_var=="SNP"]
 
     # debug one example
     #spp_drug_to_gwas_df_file = {x:y for x,y in spp_drug_to_gwas_df_file.items() if x==("Candida_albicans", "FLC")}
@@ -37909,9 +37916,9 @@ def get_figure_GWAS_significant_vars_on_trees(DataDir, ProcessedDataDir, PlotsDi
     #spp_drug_to_gwas_df_file = {x:y for x,y in spp_drug_to_gwas_df_file.items() if x==("Candida_auris", "MIF")}
 
     for (species, drug), gwas_df_file in spp_drug_to_gwas_df_file.items():
-        #print(species, drug)
+        print(species, drug)
 
-        #if species!="Candida_auris" or drug!="AMB": continue
+        #if species!="Candida_glabrata" or drug!="FLC": continue
 
         ########## GET DATA ###############
 
@@ -37920,6 +37927,15 @@ def get_figure_GWAS_significant_vars_on_trees(DataDir, ProcessedDataDir, PlotsDi
 
         # get the manhattan plot for this spp, drug
         df_manhattan_spp_drug = df_manhattan[(df_manhattan.species==species) & (df_manhattan.drug==drug)]
+        df_manhattan_all_spp_drug = df_manhattan_all[(df_manhattan_all.species==species) & (df_manhattan_all.drug==drug)]
+
+
+        # define the total number of vars
+        for tv in ["SV", "CNV", "INDEL", "SNP"]:
+            df_manhattan_all_spp_drug_v = df_manhattan_all_spp_drug[df_manhattan_all_spp_drug.type_var==tv]
+
+            nsig_vars_all = len(set(df_manhattan_all_spp_drug_v[df_manhattan_all_spp_drug_v.is_significant_var_all_vars].variantID_across_samples))
+            print("sig %s: %i"%(tv, nsig_vars_all))
 
         # keep the sig vars
         df_manhattan_spp_drug_sig = df_manhattan_spp_drug[df_manhattan_spp_drug.is_significant_var_all_vars]
@@ -37962,7 +37978,7 @@ def get_figure_GWAS_significant_vars_on_trees(DataDir, ProcessedDataDir, PlotsDi
 
         # print the lost vars
         missing_sig_vars = all_sig_vars.difference(set(df_all_vars[df_all_vars.is_significant_var_all_vars]["#Uploaded_variation"]))
-        #print("There are %i/%i significant SNPs that are not biallelic and not considered in %s-%s"%(len(missing_sig_vars), len(all_sig_vars), species, drug))
+        print("There are %i/%i significant SNPs that are not biallelic and not considered in %s-%s"%(len(missing_sig_vars), len(all_sig_vars), species, drug))
 
         # define dirs
         taxID_dir = "%s/%s_%i"%(DataDir, species, sciName_to_taxID[species])
@@ -39581,11 +39597,17 @@ def get_merged_table_strains(df_allStrainData, species_to_tree, TablesDir, df_St
 
     print("getting strains table")
 
+    # define outdir
+    outdir_csvs = "%s/supplementary_tables"%TablesDir; make_folder(outdir_csvs)
+
     # init the excel writer
     writer = pd.ExcelWriter('%s/TableS1.xlsx'%TablesDir, engine='openpyxl') 
 
     # first tab, all strains
-    df_allStrainData[['species_name', 'BioProject', 'Run', 'numeric_sampleID', 'BioSample', 'type', 'mean_coverage', 'pct_covered', 'cladeID_systematic', 'cladeID_previous', 'clonal_cluster', 'collection_date', 'collection_latitude_longitude', 'collection_country', 'paper_link', 'resistance', 'susceptibility', 'intermediate_susceptibility', 'ANI_MIC', 'CAS_MIC', 'MIF_MIC', 'FLC_MIC', 'ITR_MIC', 'POS_MIC', 'VRC_MIC', 'IVZ_MIC', 'KET_MIC', 'MIZ_MIC', 'AMB_MIC', 'BVN_MIC', '5FC_MIC', 'TRB_MIC']].to_excel(writer, sheet_name=f"All strains", index=False)
+    df_first_tab = df_allStrainData[['species_name', 'BioProject', 'Run', 'numeric_sampleID', 'BioSample', 'type', 'mean_coverage', 'pct_covered', 'cladeID_systematic', 'cladeID_previous', 'clonal_cluster', 'collection_date', 'collection_latitude_longitude', 'collection_country', 'paper_link', 'resistance', 'susceptibility', 'intermediate_susceptibility', 'ANI_MIC', 'CAS_MIC', 'MIF_MIC', 'FLC_MIC', 'ITR_MIC', 'POS_MIC', 'VRC_MIC', 'IVZ_MIC', 'KET_MIC', 'MIZ_MIC', 'AMB_MIC', 'BVN_MIC', '5FC_MIC', 'TRB_MIC']]
+
+    df_first_tab.to_excel(writer, sheet_name=f"All strains", index=False)
+    save_df_as_tab(df_first_tab, "%s/TableS1-All_strains.csv"%outdir_csvs)
 
     # second tab, overview about strain metadata
     df_Strain_metadata[['species', '# strains', '# clinical', '# environmental', '# other', '# clades', 'median pairwise SNPs/kb']].to_excel(writer, sheet_name=f"Strains overview", index=False)
@@ -39613,6 +39635,7 @@ def get_merged_table_strains(df_allStrainData, species_to_tree, TablesDir, df_St
         trees_df = trees_df.append(df)
 
     trees_df.to_excel(writer, sheet_name=f"Strain trees", index=False)
+    save_df_as_tab(trees_df, "%s/TableS1-Strain_trees.csv"%outdir_csvs)
 
     # strains
     print("writing")
@@ -39624,6 +39647,9 @@ def get_merged_table_selection(gene_features_df, selection_dfs_dict, df_enrichme
     """Writes the table with recent selection data"""
 
     print("getting selection table")
+
+    # define outdir
+    outdir_csvs = "%s/supplementary_tables"%TablesDir; make_folder(outdir_csvs)
 
     # init the excel writer
     writer = pd.ExcelWriter('%s/TableS2.xlsx'%TablesDir, engine='openpyxl') 
@@ -39642,19 +39668,33 @@ def get_merged_table_selection(gene_features_df, selection_dfs_dict, df_enrichme
     print("checks passed")
 
     # Genes under selection
-    df_sel[fields_sel].sort_values(by=["species", "type_var", "fdr_p_S", "selection_score_S", "chromosome"], ascending=[True, True, True, False, True]).to_excel(writer,  index=False, sheet_name=f"Genes under selection")
+    df_tab_selection = df_sel[fields_sel].sort_values(by=["species", "type_var", "fdr_p_S", "selection_score_S", "chromosome"], ascending=[True, True, True, False, True])
+
+    df_tab_selection.to_excel(writer,  index=False, sheet_name=f"Genes under selection")
+    save_df_as_tab(df_tab_selection, "%s/TableS2-Genes_under_selection.csv"%outdir_csvs)
 
     # genes under selection under >1 spp
-    df_sel_shared[fields_sel].sort_values(by=["n_species_orthogroup", "orthofinder_orthocluster", "species", "type_var", "fdr_p_S", "selection_score_S", "chromosome"], ascending=[False, True, True, True, True, False, True])[fields_sel].to_excel(writer,  index=False, sheet_name=f"Genes under selection >1 species")
+    df_tab_selection_shared = df_sel_shared[fields_sel].sort_values(by=["n_species_orthogroup", "orthofinder_orthocluster", "species", "type_var", "fdr_p_S", "selection_score_S", "chromosome"], ascending=[False, True, True, True, True, False, True])[fields_sel]
+
+    df_tab_selection_shared.to_excel(writer,  index=False, sheet_name=f"Genes under selection >1 species")
+    save_df_as_tab(df_tab_selection_shared, "%s/TableS2-Genes_under_selection_>1_species.csv"%outdir_csvs)
 
     # All genes under selection
-    df_sel_all[fields_sel].sort_values(by=["species", "type_var", "fdr_p_S", "selection_score_S", "chromosome"], ascending=[True, True, True, False, True]).to_excel(writer,  index=False, sheet_name=f"Selection scores all genes")
+    df_tab_selection_all = df_sel_all[fields_sel].sort_values(by=["species", "type_var", "fdr_p_S", "selection_score_S", "chromosome"], ascending=[True, True, True, False, True])
+
+    df_tab_selection_all.to_excel(writer,  index=False, sheet_name=f"Selection scores all genes")
+    save_df_as_tab(df_tab_selection_all, "%s/TableS2-Selection_scores_all_genes.csv"%outdir_csvs)
 
     # enrichment data
-    df_enrichment_all[['type_grouping', 'species', 'type_var', 'ID', 'ngenes_group_and_target', 'ngenes_no_group_target', 'ngenes_group_no_target', 'ngenes_no_group_no_target', 'OR', 'p_raw', 'p_fdr', 'group_name', 'genes']].sort_values(by=["type_grouping", "species", "type_var", "p_fdr", "OR", "ID"], ascending=[True, True, True, True, False, True]).to_excel(writer,  index=False,  sheet_name=f"Functional enrichments")
+    df_tab_enrichment = df_enrichment_all[['type_grouping', 'species', 'type_var', 'ID', 'ngenes_group_and_target', 'ngenes_no_group_target', 'ngenes_group_no_target', 'ngenes_no_group_no_target', 'OR', 'p_raw', 'p_fdr', 'group_name', 'genes']].sort_values(by=["type_grouping", "species", "type_var", "p_fdr", "OR", "ID"], ascending=[True, True, True, True, False, True])
+
+    df_tab_enrichment.to_excel(writer,  index=False,  sheet_name=f"Functional enrichments")
+    save_df_as_tab(df_tab_enrichment, "%s/TableS2-Functional_enrichments.csv"%outdir_csvs)
 
     # gene features df
-    gene_features_df[["species", "gff_upmost_parent", "gene_name", "Scerevisiae_orthologs", "orthofinder_orthocluster", "description"]].to_excel(writer, index=False, sheet_name=f"Gene features")
+    df_tab_feats = gene_features_df[["species", "gff_upmost_parent", "gene_name", "Scerevisiae_orthologs", "orthofinder_orthocluster", "description"]]
+    df_tab_feats.to_excel(writer, index=False, sheet_name=f"Gene features")
+    save_df_as_tab(df_tab_feats, "%s/TableS2-Gene_features.csv"%outdir_csvs)
 
     # write
     print("writing")
@@ -39681,7 +39721,8 @@ def get_df_gwas_results_low_confidence(spp_drug_to_gwas_df_file, ProcessedDataDi
     make_folder(outdir)
 
     # define dir
-    df_gwas_low_confidence_all_file = "%s/df_gwas_low_confidence_all.py"%outdir
+    df_gwas_low_confidence_all_file = "%s/df_gwas_low_confidence_all.py"%outdir    
+
     if file_is_empty(df_gwas_low_confidence_all_file):
 
         # init gwas df
@@ -39691,6 +39732,8 @@ def get_df_gwas_results_low_confidence(spp_drug_to_gwas_df_file, ProcessedDataDi
         for ASR_methods_phenotypes in ["MPPA,DOWNPASS", "MPPA", "DOWNPASS"]:
             for min_support in [50, 70]:
                 print(ASR_methods_phenotypes, min_support)
+
+                #if ASR_methods_phenotypes!="MPPA" or min_support!=70: continue 
 
                 # define a dir
                 outdir_ASR_ms = "%s/%s_%i"%(outdir, ASR_methods_phenotypes, min_support)
@@ -39719,6 +39762,9 @@ def get_df_gwas_results_low_confidence(spp_drug_to_gwas_df_file, ProcessedDataDi
                 # keep genes or pathways that have no sig genes
                 df_gwas_filt = df_gwas_filt[(df_gwas_filt.type_collapsing.isin({"none", "domains", "genes"})) | ( (~df_gwas_filt.pathway_has_sig_genes) & (df_gwas_filt.pathway_is_NR) )]
 
+                # debug
+                #df_gwas_filt = df_gwas_filt[(df_gwas_filt.species=="Candida_auris") & (df_gwas_filt.drug=="ANI")]
+
                 # get the format of the table to write
                 df_gwas_low_confidence = get_Table_GroupsGWAS(df_gwas_filt, DataDir, "%s/get_Table_GroupsGWAS_dataR"%outdir_ASR_ms, TablesDir_ms, gene_features_df, None, type_muts)[0]
 
@@ -39733,11 +39779,24 @@ def get_df_gwas_results_low_confidence(spp_drug_to_gwas_df_file, ProcessedDataDi
 
 
 
+def get_gwas_descriotion_with_no_breaks(x):
+
+    """Takes the gwas description and returns it with no line breaks"""
+
+    adkgkadgh
+
+    if "\n" in x: return x.replace("\n", "|")
+    else: return x
+
 def get_merged_table_GWAS(gwas_table_df, gwas_results_df_more_than_1_spp_OGs, gwas_table_df_low_confidence, TablesDir):
 
     """Writes the low-confindence GWAS results"""
 
     print("getting GWAS table")
+
+    # outdir
+    outdir_csvs = "%s/supplementary_tables"%TablesDir; make_folder(outdir_csvs)
+
 
     # init the excel writer
     writer = pd.ExcelWriter('%s/TableS3.xlsx'%TablesDir, engine='openpyxl') 
@@ -39752,6 +39811,15 @@ def get_merged_table_GWAS(gwas_table_df, gwas_results_df_more_than_1_spp_OGs, gw
         df["species"] = df.species_and_drug.apply(lambda x: x.split("-")[0])
         df["drug"] = df.species_and_drug.apply(lambda x: x.split("-")[1])
 
+        # remove new lines
+        def get_r_with_no_breaks(r, f):
+            if pd.isna(r[f]): return r[f]
+            elif type(r[f])==str: return r[f].replace("\n", " ||| ")
+            else: raise ValueError("%s, %s, %s, %s, %s"%(r[f], type(r[f]), r.species, r.drug, r.group_name))
+
+        for f in ["description", "biological_process_GO", "cellular_component_GO", "molecular_function_GO"]: 
+            df[f] = df.apply(get_r_with_no_breaks, f=f, axis=1)
+
     # define the pval fields
     interesting_pval_fields = ['pval_chi_square_maxT', 'pval_epsilon_maxT', 'pval_chi_square_phenotypes', 'pval_GenoAndPheno_phenotypes', 'pval_fisher', 'pval_chi_square_phenotypes_bonferroni', 'pval_GenoAndPheno_phenotypes_bonferroni', 'pval_fisher_bonferroni']
 
@@ -39759,16 +39827,25 @@ def get_merged_table_GWAS(gwas_table_df, gwas_results_df_more_than_1_spp_OGs, gw
     final_relevant_fields = ["species", "drug", "type_vars", "type_mutations", "type_collapsing", "group_name", "epsilon", "OR", "nodes_GenoAndPheno", "nodes_noGenoAndNoPheno", "nodes_GenoAndNoPheno", "nodes_noGenoAndPheno", "orthogroups", "n_spp_drug_worthogroups", "n_spp_drug_wpathway"] + interesting_pval_fields + ["description", "biological_process_GO", "cellular_component_GO", "molecular_function_GO"] # species_and_drug
 
     # write the high-confidence GWAS results
-    gwas_table_df.sort_values(by=["species_and_drug", "type_collapsing_level_spec", "epsilon", "OR"] + interesting_pval_fields, ascending=([True, True, False, False] + [True]*len(interesting_pval_fields))).reset_index(drop=True)[final_relevant_fields].to_excel(writer, index=False, sheet_name=f"High-confidence GWAS hits")
+    df_tab_highconf = gwas_table_df.sort_values(by=["species_and_drug", "type_collapsing_level_spec", "epsilon", "OR"] + interesting_pval_fields, ascending=([True, True, False, False] + [True]*len(interesting_pval_fields))).reset_index(drop=True)[final_relevant_fields]
+
+    df_tab_highconf.to_excel(writer, index=False, sheet_name=f"High-confidence GWAS hits")
+    save_df_as_tab(df_tab_highconf, "%s/TableS3-High-confidence_GWAS_hits.csv"%outdir_csvs)
 
     # write the high confidence hits shared across >1 dataset
     gwas_results_df_more_than_1_spp_OGs_fields = ['pname_or_orthogroups'] + final_relevant_fields
 
-    gwas_results_df_more_than_1_spp_OGs.sort_values(by=["sorting_f", "tuple_spp_drug_pname_or_orthogroups", "pname_or_orthogroups", "type_collapsing_level_spec", "species_and_drug", "epsilon", "OR"] + interesting_pval_fields, ascending=([True, False, True, True, True, False, False] + [True]*len(interesting_pval_fields))).reset_index(drop=True)[gwas_results_df_more_than_1_spp_OGs_fields].to_excel(writer, index=False, sheet_name=f"High-confidence GWAS hits >1 dataset")
+    df_tab_highconf_shared = gwas_results_df_more_than_1_spp_OGs.sort_values(by=["sorting_f", "tuple_spp_drug_pname_or_orthogroups", "pname_or_orthogroups", "type_collapsing_level_spec", "species_and_drug", "epsilon", "OR"] + interesting_pval_fields, ascending=([True, False, True, True, True, False, False] + [True]*len(interesting_pval_fields))).reset_index(drop=True)[gwas_results_df_more_than_1_spp_OGs_fields]
+
+    df_tab_highconf_shared.to_excel(writer, index=False, sheet_name=f"High-confidence GWAS hits >1 dataset")
+    save_df_as_tab(df_tab_highconf_shared, "%s/TableS3-High-confidence_GWAS_hits_>1_dataset.csv"%outdir_csvs)
 
     # write the low-confidence GWAS results
     gwas_table_df_low_confidence["ASR_method"] = gwas_table_df_low_confidence.ASR_methods_phenotypes
-    gwas_table_df_low_confidence.sort_values(by=["ASR_methods_phenotypes", "min_support", "species_and_drug", "type_collapsing_level_spec", "epsilon", "OR"] + interesting_pval_fields, ascending=([True, False, True, True, False, False] + [True]*len(interesting_pval_fields))).reset_index(drop=True)[["ASR_method", "min_support"] + final_relevant_fields].to_excel(writer, index=False, sheet_name=f"Low-confidence GWAS hits")
+    df_tab_lowconf = gwas_table_df_low_confidence.sort_values(by=["ASR_methods_phenotypes", "min_support", "species_and_drug", "type_collapsing_level_spec", "epsilon", "OR"] + interesting_pval_fields, ascending=([True, False, True, True, False, False] + [True]*len(interesting_pval_fields))).reset_index(drop=True)[["ASR_method", "min_support"] + final_relevant_fields]
+
+    df_tab_lowconf.to_excel(writer, index=False, sheet_name=f"Low-confidence GWAS hits")
+    save_df_as_tab(df_tab_lowconf, "%s/TableS3-Low-confidence_GWAS_hits.csv"%outdir_csvs)
 
     # write
     print("writing")

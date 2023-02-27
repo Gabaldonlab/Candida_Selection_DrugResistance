@@ -40,6 +40,8 @@ The folder 'ancestral_GWAS_pipeline' includes the scripts that constitute the co
 
 - 'ancestral_GWAS_functions.py' is a module with the python functions used by the other scripts.
 
+The folder 'supplementary_tables' contains the supplementary tables in csv format (sepparated by tabs).
+
 ## Software environments
 
 We used a combination of conda environments and manually installed software to run all the scripts above. The folder 'conda_envs' includes the .yml files that define these environments:
