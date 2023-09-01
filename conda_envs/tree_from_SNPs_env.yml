@@ -1,0 +1,28 @@
+name: tree_from_SNPs_env
+
+channels:
+  - bioconda
+  - anaconda
+  - etetoolkit
+  - conda-forge
+
+dependencies:
+  - r-phytools=0.7_90
+  - r-base=4.1.1
+  - python=3.6.11
+  - biopython=1.78
+  - bedops=2.4.41
+  - pandas=1.1.1
+  - mosdepth=0.3.1
+  - ete3=3.1.2
+  - iqtree=2.1.2
+  - picard=2.18.26
+  - gatk4=4.1.2.0
+  - snp-sites=2.5.1
+  - bedtools=2.29.0
+  - datamash=1.1.0
+  - r-argparser=0.7
+
+
+
+

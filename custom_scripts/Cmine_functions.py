@@ -6640,7 +6640,7 @@ def get_taxid2name(taxIDs):
 
     return taxid2name
     
-def get_allWGS_runInfo_fromSRA_forTaxIDs(fileprefix, taxIDs, reference_genome, replace=False, min_coverage=30):
+def get_allWGS_runInfo_fromSRA_forTaxIDs(fileprefix, taxIDs, reference_genome, replace=False, min_coverage=30, return_unfiltered_df=False):
 
     """This function tages all the SRRs that have WGS for the required taxIDs"""
 
@@ -6675,6 +6675,9 @@ def get_allWGS_runInfo_fromSRA_forTaxIDs(fileprefix, taxIDs, reference_genome, r
         save_object(SRA_runInfo_df, SRA_runInfo_df_file)
 
     else: SRA_runInfo_df = load_object(SRA_runInfo_df_file)
+
+    # only return unfiltered
+    if return_unfiltered_df is True: return SRA_runInfo_df
 
 
     # define the expected coverage
@@ -7461,8 +7464,10 @@ def download_srr_with_prefetch(srr, SRRfile, replace=False):
 
             # run prefetch
             print("running prefetch. The std can be found in %s"%prefetch_std)
-            try: run_cmd("prefetch -o %s --max-size 500G --progress 1 %s > %s 2>&1"%(SRRfile, srr, prefetch_std))
-            except: print("prefetch did not work for %s"%srr)
+            prefetch_cmd = "prefetch -o %s --max-size 500G --resume no --verify yes --progress %s > %s 2>&1"%(SRRfile, srr, prefetch_std)
+            #try: run_cmd("prefetch -o %s --max-size 500G --progress 1 %s > %s 2>&1"%(SRRfile, srr, prefetch_std)) # old, with v2.9
+            try: run_cmd_anyEnv(prefetch_cmd, env="sra_tools_env") # new, v3.0.5 (run with )
+            except: print("prefetch did not work for %s. Command: '%s'"%(srr, prefetch_cmd))
 
             # test that the std of prefetch states that there are no unresolved dependencies
             std_lines = open(prefetch_std, "r").readlines()
@@ -20732,7 +20737,7 @@ def get_SV_CNV_df_with_aneuploidies(SV_CNV_df, ploidy, tmpdir, threads, species,
 
     return SV_CNV_df
 
-def get_vars_df_only_subset_samples_for_GWAS_simplified(taxID_dir, sampleIDs, outdir, ploidy, replace, gff, threads, species, reference_genome):
+def get_vars_df_only_subset_samples_for_GWAS_simplified(taxID_dir, sampleIDs, outdir, ploidy, replace, gff, threads, species, reference_genome, interesting_geneIDs=None, sampleID_is_int=True):
 
     """Writes a df with the variants per sample in only a subset of samples. """
 
@@ -20740,13 +20745,40 @@ def get_vars_df_only_subset_samples_for_GWAS_simplified(taxID_dir, sampleIDs, ou
     variants_df_file = "%s/variants_df.py"%outdir
     annot_df_file = "%s/annot_df.py"%outdir
 
+    # define files that are in the species dir, which depends on the analysis
+
+    # this is for the actual taxID
+    if get_file(taxID_dir)=="%s_%i"%(species, sciName_to_taxID[species]):
+        SV_CNV_df_file = "%s/integrated_varcalls/SV_CNV_filt.py"%taxID_dir
+        small_vars_df_file = "%s/integrated_varcalls/smallVars_filt.py"%taxID_dir
+
+        small_vars_annot_file = "%s/integrated_varcalls/smallVars_annot.tab"%taxID_dir
+        SV_CNV_annot_file = "%s/integrated_varcalls/SV_CNV_annot.tab"%taxID_dir
+
+    # GWAS validation
+    elif get_file(taxID_dir)==species:
+        SV_CNV_df_file = "%s/variant_integration/SV_CNV_filt.py"%taxID_dir
+        small_vars_df_file = "%s/variant_integration/smallVars_filt.py"%taxID_dir
+
+        small_vars_annot_file = "%s/small_var_annotation/annotated_variants_corrrectedGene.tab"%taxID_dir
+        SV_CNV_annot_file = "%s/SV_CNV_annotation/annotated_variants_corrrectedGene.tab"%taxID_dir
+
+    else: raise ValueError("invalid %s"%taxID_dir)
+
+    # clean
+    if replace is True:
+        print("cleaning")
+        for f in [variants_df_file, annot_df_file, "%s/generating_aneuploidies"%outdir, "%s.only_interesting_genes.py"%variants_df_file]: delete_file_or_folder(f)
+
+        return (1, 2,3 )
+
     ############## GET VARIANTS ##################
     if file_is_empty(variants_df_file) or replace is True:
         print("getting variants for GWAS")
 
         # load SV_CNVs and keep important fields
         print("SVs")
-        SV_CNV_df = load_object("%s/integrated_varcalls/SV_CNV_filt.py"%taxID_dir)
+        SV_CNV_df = load_object(SV_CNV_df_file)
         SV_CNV_df = SV_CNV_df[(SV_CNV_df.sampleID.isin(sampleIDs))][["#CHROM", "POS", "REF", "ALT", "ID", "INFO_merged_relative_CN", "sampleID", "variantID_across_samples", "type_var", "is_transcript_disrupting_inSomeGenes", "INFO_SVTYPE", "INFO_END"]]
         SV_CNV_df["#Uploaded_variation"] = SV_CNV_df.ID
 
@@ -20755,7 +20787,7 @@ def get_vars_df_only_subset_samples_for_GWAS_simplified(taxID_dir, sampleIDs, ou
         
         # load small vars
         print("small vars")
-        small_vars_df = load_object("%s/integrated_varcalls/smallVars_filt.py"%taxID_dir)
+        small_vars_df = load_object(small_vars_df_file)
         small_vars_df = small_vars_df[(small_vars_df.sampleID.isin(sampleIDs))]
 
         # filter small vars depending on the ploidy
@@ -20779,7 +20811,7 @@ def get_vars_df_only_subset_samples_for_GWAS_simplified(taxID_dir, sampleIDs, ou
         variants_df = small_vars_df.append(SV_CNV_df)
 
         # change some formats
-        variants_df["sampleID"] = variants_df["sampleID"].apply(int).apply(str)
+        if sampleID_is_int is True: variants_df["sampleID"] = variants_df["sampleID"].apply(int).apply(str)
 
         # keep important fields
         variants_df = variants_df[["variantID_across_samples", "sampleID", "#Uploaded_variation", "type_var"]]
@@ -20805,8 +20837,8 @@ def get_vars_df_only_subset_samples_for_GWAS_simplified(taxID_dir, sampleIDs, ou
         print("getting subseted variant annotations")
 
         # get the small variants annotations
-        small_vars_annot = get_tab_as_df_or_empty_df("%s/integrated_varcalls/smallVars_annot.tab"%taxID_dir)
-        SV_CNV_annot = get_tab_as_df_or_empty_df("%s/integrated_varcalls/SV_CNV_annot.tab"%taxID_dir)
+        small_vars_annot = get_tab_as_df_or_empty_df(small_vars_annot_file)
+        SV_CNV_annot = get_tab_as_df_or_empty_df(SV_CNV_annot_file)
         annot_df = small_vars_annot.append(SV_CNV_annot)
 
         interesting_vars = set(variants_df["#Uploaded_variation"])
@@ -20862,7 +20894,39 @@ def get_vars_df_only_subset_samples_for_GWAS_simplified(taxID_dir, sampleIDs, ou
 
     ##############################################
 
-    return variants_df, annot_df, variants_df_file
+    ###### KEEP ONLY ineteresting_geneIDs ######
+
+    # override variants_df, annot_df, variants_df_file
+    if not interesting_geneIDs is None:
+        print("keeping only interesting_geneIDs")
+
+        # keep the annotation df that has interesting genes
+        strange_genes = interesting_geneIDs.difference(set(annot_df.Gene))
+        if len(strange_genes)>0: raise ValueError("There are some 'interesting gene IDs' not in annot_df: %s"%strange_genes)
+        annot_df = annot_df[annot_df.Gene.isin(interesting_geneIDs)]
+
+        # write the variants_df_file_only_interesting_genes
+        variants_df_file_only_interesting_genes = "%s.only_interesting_genes.py"%variants_df_file
+        if file_is_empty(variants_df_file_only_interesting_genes):
+
+            interesting_vars_subset_genes = set(annot_df.variantID_across_samples)
+            print("Keeping only %i vars"%(len(interesting_vars_subset_genes)))
+            variants_df = variants_df[variants_df.variantID_across_samples.isin(interesting_vars_subset_genes)]
+            save_object(variants_df, variants_df_file_only_interesting_genes)
+
+        variants_df = load_object(variants_df_file_only_interesting_genes)
+
+        # checks
+        if set(variants_df.variantID_across_samples)!=set(annot_df.variantID_across_samples): raise ValueError("vars and annot are not the same")
+
+        # define the variants df to return
+        variants_df_file_final = variants_df_file_only_interesting_genes
+
+    else: variants_df_file_final = variants_df_file
+
+    ############################################
+
+    return variants_df, annot_df, variants_df_file_final
 
 
 
@@ -21859,7 +21923,7 @@ def get_grouping_df_file(outdir_gwas_all, annot_df_all, type_vars_set, type_gene
     grouping_df_file = "%s/grouping_df_all.min_%imuts_per_group.py"%(outdir_gwas_all, min_nmuts_per_group)
 
     if file_is_empty(grouping_df_file):
-        print("generating grouping df")
+        #print("generating grouping df")
 
         # get the annotations of the important variants
         #print("filtering annot_df")
@@ -21991,6 +22055,10 @@ def run_integrate_GWAS_jobs_one_combination_get_df(outdir_GWAS_jobs, type_collap
     # get the gwas results df
     gwas_results_df = get_tab_as_df_or_empty_df("%s/integrated_GWAS_stats.tab"%outdir_GWAS_jobs)
 
+    if min_support==70 and ASR_methods_phenotypes=="MPPA,DOWNPASS" and type_collapsing=="none": 
+        n_pheno_transitions_set = set(gwas_results_df.nodes_withPheno)
+        if len(n_pheno_transitions_set)!=1: raise ValueError("there should be only 1")
+        print(next(iter(n_pheno_transitions_set)), 'phenotype transition nodes for min_support==70 and ASR_methods_phenotypes=="MPPA,DOWNPASS"')
 
     # define the pval fields
     pval_fields_complete_set = set(get_pval_fields_gwas(gwas_results_df)) # old way, all pvals
@@ -22917,14 +22985,98 @@ def get_gwas_df_with_fisher_p_value_and_corrected_pvals(gwas_df, threads, gwas_u
 
     return gwas_df
 
+def get_df_gwas_validation_all(ProcessedDataDir, wrong_spp_drug_combinations, DataDir_validation, gwas_table_df_genes):
 
-def get_df_gwas_af_filtering_integrated(DataDir, ProcessedDataDir, threads):
+    """Loads the GWAS dataframe with all results (only keeping protein-altering results for single variants)"""
+
+    df_gwas_validation_all_file = "%s/df_gwas_validation_all.py"%ProcessedDataDir
+    if file_is_empty(df_gwas_validation_all_file):
+        print("Getting df gwas")
+
+        # init
+        df_gwas_validation_all = pd.DataFrame()
+
+        for species in ["Candida_glabrata", "Candida_auris"]:
+
+            gwas_dir = "%s/%s/GWAS_results"%(DataDir_validation, species) 
+            for drug in os.listdir(gwas_dir):
+
+                # debug
+                if (species, drug) in wrong_spp_drug_combinations: continue
+                print(species, drug)
+
+                # define interesting genes
+                interesting_geneIDs = set(gwas_table_df_genes[gwas_table_df_genes.species_and_drug=="%s-%s"%(species, drug)].geneID)
+
+                # load df gwas
+                gwas_df = load_object("%s/%s/gwas_results_df_all.py"%(gwas_dir, drug))
+                gwas_df = gwas_df[interesting_fields_gwas_df]
+                gwas_df = gwas_df[gwas_df.gwas_method=="synchronous"]
+
+                # checks
+                if any(gwas_df.nodes_GenoAndPheno<2): raise ValueError("there are nodes with genoandpheno<2")
+                if any(gwas_df.ASR_methods_phenotypes!=gwas_df.ASR_methods_mutations): raise ValueError("The ASR method for mutatiobs and phenotypes is not always the same")
+
+                # load annotation dfs and only nonsyn variants that affect the interesting_geneIDs
+                annot_df = load_object("%s/%s/annot_df.py"%(gwas_dir, drug))
+                all_vars_hit = set(gwas_df[gwas_df.type_collapsing=="none"].group_name)
+                missing_vars = all_vars_hit.difference(set(annot_df.variantID_across_samples))
+                if len(missing_vars)>0: raise ValueError("missing_vars: %s"%missing_vars)
+
+                missing_geneIDs = interesting_geneIDs.difference(set(annot_df.Gene))
+                if len(missing_geneIDs)>0: raise ValueError("missing_geneIDs: %s"%missing_geneIDs)
+
+                annot_df = annot_df[annot_df.variantID_across_samples.isin(all_vars_hit)]
+                annot_df = annot_df[(annot_df.is_synonymous==False) | (annot_df.is_truncating==True)]
+                annot_df = annot_df[annot_df.Gene.isin(interesting_geneIDs)][["variantID_across_samples", "Gene"]].drop_duplicates()
+
+                var_to_genes = dict(annot_df.groupby("variantID_across_samples").apply(lambda df_v: set(df_v.Gene)))
+
+                # add the genes affected by each hit, only keeping protein altering variants in genes
+                def get_affected_genes_by_hit(r):
+
+                    if r.type_collapsing=="genes": return {r.group_name}
+                    
+                    elif r.type_collapsing=="domains": return {r.group_name.split("#")[1]}
+
+                    elif r.type_collapsing=="none":
+                        if r.group_name in var_to_genes: return var_to_genes[r.group_name]
+                        else: return set()
+
+                    else: raise ValueError("invalid %s"%r.type_collapsing)
+
+                gwas_df["affected_genes_set"] = gwas_df.apply(get_affected_genes_by_hit, axis=1)
+
+                # check
+                strange_affected_genes = set.union(*gwas_df["affected_genes_set"]).difference(interesting_geneIDs)
+                if len(strange_affected_genes)>0: raise ValueError("strange_affected_genes: %s"%strange_affected_genes)
+
+                # check the transitions
+                n_transitions = gwas_df[(gwas_df.min_support==70) & (gwas_df.ASR_methods_phenotypes=="MPPA,DOWNPASS")].iloc[0].nodes_withPheno
+                if n_transitions<5: raise ValueError("insufficient transutions %s"%n_transitions)
+
+                # keep only those with genes affected
+                gwas_df = gwas_df[gwas_df.affected_genes_set.apply(len)>0]
+                if len(gwas_df)==0: print("WARNING: No hits in sig genes")
+
+                # add
+                df_gwas_validation_all = df_gwas_validation_all.append(gwas_df).reset_index(drop=True)
+
+        # save
+        print("saving")
+        save_object(df_gwas_validation_all, df_gwas_validation_all_file)
+
+    return load_object(df_gwas_validation_all_file)
+
+
+def get_df_gwas_af_filtering_integrated(DataDir, ProcessedDataDir, threads, wrong_spp_drug_combinations=set()):
 
     """gets the filtered and integrated GWAS dfs with reduced fields"""
 
     print("getting reduced gwas dfs")
 
     # get outdir
+    make_folder(ProcessedDataDir)
     outdir = "%s/gwas_df_integrated_dir"%ProcessedDataDir; make_folder(outdir)
 
     # init a dict that maps each drug and species to the GWAS results
@@ -22934,12 +23086,30 @@ def get_df_gwas_af_filtering_integrated(DataDir, ProcessedDataDir, threads):
     for species in ["Candida_glabrata", "Candida_albicans", "Candida_auris"]: # Candida_albicans
 
         # define the outdir gwas
-        gwas_dir = "%s/%s_%i/ancestral_GWAS_drugResistance"%(DataDir, species, sciName_to_taxID[species])
+        if get_file(DataDir)=="data": 
+            gwas_dir = "%s/%s_%i/ancestral_GWAS_drugResistance"%(DataDir, species, sciName_to_taxID[species])
+            drug_dirs = [f for f in os.listdir(gwas_dir) if f.startswith("GWAS_") and f.endswith("resistance")]
+            function_get_drug = (lambda x: x.split("_")[1])
+
+        elif get_file(DataDir)=="data_gwas_validation": 
+            gwas_dir = "%s/%s/GWAS_results"%(DataDir, species) 
+            drug_dirs = os.listdir(gwas_dir)
+            function_get_drug = (lambda x: x)
+
+        else: raise ValueError("invalid data dir")
+
+        # debg unexisting species
+        if not os.path.isdir(gwas_dir):
+            print("WARNING: unexistent dir for %s"%species)
+            continue
 
         # keep df for each drug
-        for drug_dir in [f for f in os.listdir(gwas_dir) if f.startswith("GWAS_") and f.endswith("resistance")]:
-            drug = drug_dir.split("_")[1]
+        for drug_dir in drug_dirs:
+            drug = function_get_drug(drug_dir)
             print(species, drug)
+
+            # discard some combinations
+            if (species, drug) in wrong_spp_drug_combinations: continue
 
             #if drug!="POS" or species!="Candida_glabrata": continue # debug to  load the first combination
 
@@ -33297,7 +33467,7 @@ def get_Table_GroupsGWAS(df_gwas_filt, DataDir, ProcessedDataDir, TablesDir, gen
             filters_series = designed_GWAS_filters_df.loc["%s-%s"%(species, drug)]
             """
 
-            relevant_fields = ["species", "drug", "type_vars", "type_mutations", "type_collapsing", "group_name", "epsilon", "OR", "nodes_GenoAndPheno", "nodes_noGenoAndNoPheno", "nodes_GenoAndNoPheno", "nodes_noGenoAndPheno", "type_collapsing_level_spec", "pathway_has_sig_genes", "pathway_is_NR", "genes_in_pathway", "set_altered_genes"] + interesting_pval_fields + ["description"]
+            relevant_fields = ["species", "drug", "type_vars", "type_mutations", "type_collapsing", "group_name", "epsilon", "OR", "nodes_GenoAndPheno", "nodes_noGenoAndNoPheno", "nodes_GenoAndNoPheno", "nodes_noGenoAndPheno", "type_collapsing_level_spec", "pathway_has_sig_genes", "pathway_is_NR", "genes_in_pathway", "set_altered_genes", "min_support", "ASR_methods_phenotypes"] + interesting_pval_fields + ["description"]
 
             # keep relevant fields
             df_drug = df_drug[relevant_fields]
@@ -33349,7 +33519,7 @@ def get_Table_GroupsGWAS(df_gwas_filt, DataDir, ProcessedDataDir, TablesDir, gen
 
             gwas_results_df = gwas_results_df.append(df_drug).reset_index(drop=True)
 
-    final_relevant_fields = ["species_and_drug", "type_vars", "type_mutations", "type_collapsing", "group_name", "epsilon", "OR", "nodes_GenoAndPheno", "nodes_noGenoAndNoPheno", "nodes_GenoAndNoPheno", "nodes_noGenoAndPheno", "orthogroups", "n_spp_drug_worthogroups", "n_spp_drug_wpathway"] + interesting_pval_fields + ["description", "biological_process_GO", "cellular_component_GO", "molecular_function_GO"]
+    final_relevant_fields = ["species_and_drug", "type_vars", "type_mutations", "type_collapsing", "group_name", "epsilon", "OR", "nodes_GenoAndPheno", "nodes_noGenoAndNoPheno", "nodes_GenoAndNoPheno", "nodes_noGenoAndPheno", "orthogroups", "n_spp_drug_worthogroups", "n_spp_drug_wpathway", "min_support", "ASR_methods_phenotypes"] + interesting_pval_fields + ["description", "biological_process_GO", "cellular_component_GO", "molecular_function_GO"]
 
     # add OGs as a string
     gwas_results_df["orthogroups"] = gwas_results_df.orthofinder_orthoclusters.apply(lambda x: ", ".join(sorted({og for og in x if og!="no_OG"})))
@@ -34456,17 +34626,107 @@ def get_optimal_and_rationally_designed_filters_df(valid_spp_drug, filtering_sta
     return filters_df
 
 
-def generate_table_allStrainData(metadata_df, species_to_srr_to_sampleID, species_to_tree, TablesDir, DataDir, ProcessedDataDir):
+def get_strain_name_metadata_df_r(r):
+
+    """gets strain name"""
+
+    non_interesting_fields = {"BioSample", "Run", "BioProject"}    
+    if any([r[f] in r.strain for f in non_interesting_fields]):
+
+        # interesting strain names
+        interesting_fs = ["strain", "uncurated_SampleName", "uncurated_Sample Name", "uncurated_Sample name", "uncurated_strain_name_alias", "uncurated_Strain", "uncurated_sample_name", "uncurated_sample_description", "uncurated_ArrayExpress-STRAIN_OR_LINE", "uncurated_Submitter Id", "uncurated_External Id"]
+
+
+        print(r.strain, r.Run)
+        for f in interesting_fs: print(r[f])
+        daljhdakdagad
+
+        biosample
+    elif not pd.isna(r.strain): return r.strain
+    else: raise ValueError(r)
+
+
+    print(r)
+
+
+    print(r.strain)
+
+    kjdahkdahakjhda
+
+
+
+def get_info_biosample(Ib, biosample_accession):
+
+    """Gets biosample metadata for one biosample"""
+
+    print(Ib)
+
+    handle = Entrez.efetch(db="biosample", id=biosample_accession, rettype="gb", retmode="text")
+    record = handle.read()
+    handle.close()
+
+    # Extract relevant metadata from the GenBank record
+    info_dict = {}
+    all_lines = []
+    for line in record.splitlines():
+        all_lines.append(line)
+
+        # only get identigiers
+        if line.startswith("Identifiers:"): 
+            info_dict = {x.split(":")[0].lstrip().rstrip() : x.split(":")[1].lstrip().rstrip() for x in line.lstrip("Identifiers:").split(";")}
+            break
+
+    if len(info_dict)==0: raise ValueError("%s"%all_lines)
+
+    # return
+    info_dict["biosample_accession"] = biosample_accession
+    return info_dict
+
+def fetch_sra_runs_metadata(accessions, threads, tmpdir):
+
+    """get biosample metadata of accessions"""
+
+    # write accesiosn to tmpdir
+    make_folder(tmpdir)
+    sra_runs_file = "%s/sra_runs.txt"%tmpdir
+    open(sra_runs_file, "w").write("\n".join(accessions))
+
+    # get samplename
+    run_info_df_file = "%s/run_info.csv"%tmpdir
+    #fields = ["Run", "SampleName", "Sample", "BioSample", "Name"]
+    if file_is_empty(run_info_df_file) or True: 
+        print("getting sra data")
+        remove_file(run_info_df_file)
+
+        run_cmd("epost -db sra -input %s -format acc | efetch -db sra -format runinfo > %s"%(sra_runs_file, run_info_df_file))
+        #run_cmd("cat %s | join-into-groups-of 500 | xargs -n 1 sh -c 'epost -db biosample -id \"$0\" -format acc | elink -target sra | efetch -db sra -format runinfo -mode xml | xtract -pattern Row -def \"NA\" -element %s' > %s"%(biosamples_file, " ".join(fields), run_info_df_file))
+
+    run_info_df = pd.read_csv(run_info_df_file, sep=",")
+
+    missing_accessions = set(accessions).difference(set(run_info_df.Run))
+    print("Missing acccessions: %s (%i)"%(missing_accessions, len(missing_accessions)))
+    
+    return run_info_df
+
+
+
+
+def generate_table_allStrainData(metadata_df, species_to_srr_to_sampleID, species_to_tree, TablesDir, DataDir, ProcessedDataDir, threads):
 
     """Generates a table with all strains with variant calling and also the information"""
 
     # define the final table
     table_name = "%s/allStrainData.xlsx"%TablesDir
     df_name =  "%s/allStrainData.py"%ProcessedDataDir
-    if file_is_empty(table_name) or file_is_empty(df_name) or True:
+    if file_is_empty(table_name) or file_is_empty(df_name):
 
         # keep
         metadata_df = cp.deepcopy(metadata_df)
+
+        # get biosample accessions
+        #sra_runs_df = fetch_sra_runs_metadata(sorted(set(metadata_df.Run)), threads, "%s/fetching_sra_data"%ProcessedDataDir)
+        #metadata_df["strain_name"] = metadata_df.apply(get_strain_name_metadata_df_r, axis=1)
+        #print(metadata_df.strain_name)
 
         # add coverage
         df_coverage = pd.concat([pd.read_csv("%s/%s_%i/coverage_all_srrs.tab"%(DataDir, species, taxID), sep="\t")[["srr", "mean_coverage", "pct_covered"]] for taxID, species in taxID_to_sciName.items()])
@@ -34512,7 +34772,7 @@ def generate_table_allStrainData(metadata_df, species_to_srr_to_sampleID, specie
 
         # init fields
         mic_fields = [ 'ANI_MIC', 'CAS_MIC', 'MIF_MIC', 'FLC_MIC', 'ITR_MIC', 'POS_MIC', 'VRC_MIC', 'IVZ_MIC', 'KET_MIC', 'MIZ_MIC', 'AMB_MIC', 'BVN_MIC', '5FC_MIC', 'TRB_MIC']
-        final_fields = ["species_name", "BioProject", "Run", "numeric_sampleID", "BioSample", "type", "mean_coverage", "pct_covered", "cladeID_systematic", "cladeID_previous", "clonal_cluster", "collection_date", "collection_latitude_longitude", "collection_country", "paper_link"]
+        final_fields = ["species_name", "BioProject", "Run", "strain", "numeric_sampleID", "BioSample", "type", "mean_coverage", "pct_covered", "cladeID_systematic", "cladeID_previous", "clonal_cluster", "collection_date", "collection_latitude_longitude", "collection_country", "clinical_patient_ID", "timepoint", "paper_link"]
 
         # add the link of each study
         bp_to_link = {'PRJDB6988': 'https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0223433',
@@ -35492,7 +35752,7 @@ def get_figure_Diversity_patterns_boxplots(dict_df_pairwiseDifferences_all, type
     ax = sns.boxplot(data=df_pairwiseDifferences_all, x="species", y=zfield, hue="type_var", palette=palette)
 
 
-    ax.set_xticklabels([s.split("_")[1] for s in sorted_species_byPhylogeny], rotation=90)
+    ax.set_xticklabels(["C. "+s.split("_")[1] for s in sorted_species_byPhylogeny], rotation=90)
 
 
     # add lines
@@ -39393,12 +39653,34 @@ def get_figure_GWAS_all_results(PlotsDir, df_gwas_filt):
     if initial_len_square_df!=len(square_df): raise ValueError("len changed")
 
     # reorder
+    row_colors_df = row_colors_df.loc[square_df.index]
     #rows_tuple_list = [(x, {k : y[k] for k in sorted(y.keys(), key=(lambda val: val.lower()))}) for x,y in rows_tuple_list]
 
     # make plot
     cmap = "rocket_r"
-    cm = sns.clustermap(square_df, col_cluster=False, row_cluster=False, cmap=cmap,  col_colors=col_colors_df, row_colors=row_colors_df, cbar_kws={"label":"# sig. groups"}, annot=annot_df.loc[square_df.index, square_df.columns], annot_kws={"size": 10}, fmt="", yticklabels=1) # , xticklabels=1    
+    cm = sns.clustermap(square_df, col_cluster=False, row_cluster=False, cmap=cmap,  col_colors=col_colors_df, row_colors=row_colors_df, cbar_kws={"label":"# sig. groups"}, annot=annot_df.loc[square_df.index, square_df.columns], annot_kws={"size": 10}, fmt="", yticklabels=1, linewidth=.5) # , xticklabels=1    
 
+
+    # define a mapping between colors and symbols for row colors
+    all_vals = set.union(*df_gwas_filt.rowID.apply(lambda x: set(x.split("-"))))
+    val_to_symbol = {"non_syn_muts":"n", "truncating_muts":"x", "domains":"d", "genes":"g", "Reactome":"r"}
+    for v in all_vals.difference(set(val_to_symbol)): val_to_symbol[v] = ""
+
+    val_to_bgcolor = {"non_syn_muts":"white", "truncating_muts":"white", "domains":"black", "genes":"black", "Reactome":"white"}
+    for v in all_vals.difference(set(val_to_bgcolor)): val_to_bgcolor[v] = "black"
+
+    # modify the col colors, iterating through each cell
+    for rI in range(len(square_df)):
+        for cI, col in enumerate(row_colors_df.columns):
+
+            # get the value
+            color_dict = [d for c,d in rows_tuple_list if c==col][0]
+            c_to_val = {c:v for v,c in color_dict.items()}
+            color = row_colors_df[col].iloc[rI]
+            val = c_to_val[color]
+
+            # add symbol
+            cm.ax_row_colors.text(cI+0.5, rI+0.5, val_to_symbol[val], ha="center", va="center", fontsize=12, color=val_to_bgcolor[val]) # ontweight="bold",
 
     # re-position the panels
     hm_pos = cm.ax_heatmap.get_position()
@@ -39426,10 +39708,27 @@ def get_figure_GWAS_all_results(PlotsDir, df_gwas_filt):
     # title
     cm.ax_col_colors.set_title("")
 
+
+    # change settings so that the legends are squares
+    plt.rcParams['legend.handlelength'] = 1.5
+    plt.rcParams['legend.handleheight'] = plt.rcParams['legend.handlelength'] * 1.125
+
     # add a legend for the row colors
     def get_lel(facecolor, label, edgecolor="gray"): return mpatches.Patch(facecolor=facecolor, edgecolor=edgecolor, label=label)
+
     legend_elements = make_flat_listOflists([([get_lel("white", "", edgecolor="white"), get_lel("white", f, edgecolor="white")] + [get_lel(color,label) for label,color in color_dict.items()]) for f, color_dict in rows_tuple_list])
-    cm.ax_heatmap.legend(handles=legend_elements, loc="upper right", bbox_to_anchor=(0, 1))
+    legend = cm.ax_heatmap.legend(handles=legend_elements, loc="upper right", bbox_to_anchor=(0, 1))
+    l_extend = legend.get_window_extent()
+    ax_pos = cm.ax_heatmap.get_position()
+
+    # add symbols
+    for Ip, patch in enumerate(legend_elements):
+        x = ax_pos.x0  - 8.5
+        y = ax_pos.y1 + Ip*0.86 + 0.07
+        label = patch.get_label()
+        if label in val_to_symbol: cm.ax_heatmap.text(x, y, val_to_symbol[label], color=val_to_bgcolor[label], ha='center', va='center', fontsize=12, zorder=10)#, fontweight='bold') # val_to_bgcolor[val]
+
+   
 
     # add a legend for the col colors
     legend_elements = make_flat_listOflists([([get_lel("white", "", edgecolor="white"), get_lel("white", f, edgecolor="white")] + [get_lel(color,label) for label,color in color_dict.items()]) for f, color_dict in cols_tuple_list])    
@@ -39451,6 +39750,7 @@ def get_figures_trees_with_association_info(DataDir, PlotsDir, species_to_gff, g
     plots_dir = "%s/trees_ASR_gwas_hits"%(PlotsDir); make_folder(plots_dir)
     tmpdir = "%s/tmp_creating"%plots_dir; make_folder(tmpdir)
 
+
     # add final name
     gene_features_df = cp.deepcopy(gene_features_df)
     def get_final_name_gene_features_df(r):
@@ -39470,18 +39770,28 @@ def get_figures_trees_with_association_info(DataDir, PlotsDir, species_to_gff, g
     #("Candida_auris", "ANI", "GO:0015294", "pathway", False, ["ANI"], "r")# fourth top hit interesting gene
 
     # paper relevant trees
-    list_items = [("Candida_glabrata", "VRC", "PDR1", "gene", True, [], "r"),
-    
-                  ("Candida_glabrata", "MIF", "FKS1", "gene", False, ["MIF"], "r"),
-                  ("Candida_glabrata", "MIF", "FKS2", "gene", False, ["MIF"], "r"),
-                  ("Candida_auris", "ANI", "GSC2", "gene", False, ["ANI"], "r"),
-                  ("Candida_glabrata", "MIF", "NET1", "gene", False, ["MIF"], "r"), # interesting gene
-                  ("Candida_auris", "ANI", "gene-B9J08_003526", "gene", False, ["ANI"], "r") # top hit interesting gene
+    list_items = [
+                  #("Candida_glabrata", "VRC", "PDR1", "gene", True, [], "r"), # testing things
+                  #("Candida_glabrata", "FLC", "CAGL0I11011g", "gene", True, [], "r"), # testing things
+                  #("Candida_glabrata", "FLC", "NRG1", "gene", True, [], "r"), # testing things
+                  #("Candida_glabrata", "FLC", "PDR1", "gene", True, [], "r", "all_vars"), # testing things. Not based on th gwas df
+                  #("Candida_glabrata", "VRC", "PDR1", "gene", True, [], "r", "all_vars"), # testing things. Not based on th gwas df
+
+
+                  ("Candida_glabrata", "FLC", "PDR1", "gene", True, ["FLC"], "r", "all_vars"), # testing things. Not based on th gwas df
+
+
+                  ("Candida_glabrata", "VRC", "PDR1", "gene", True, [], "r", None), # in the first paper
+                  ("Candida_glabrata", "MIF", "FKS1", "gene", False, ["MIF"], "r", None),
+                  ("Candida_glabrata", "MIF", "FKS2", "gene", False, ["MIF"], "r", None),
+                  ("Candida_auris", "ANI", "GSC2", "gene", False, ["ANI"], "r", None),
+                  ("Candida_glabrata", "MIF", "NET1", "gene", False, ["MIF"], "r", None), # interesting gene
+                  ("Candida_auris", "ANI", "gene-B9J08_003526", "gene", False, ["ANI"], "r", None) # top hit interesting gene
                  ]
 
 
     # one plot for each species
-    for species, drug, common_name, type_group, only_mutations_associated_to_resistance, mic_fields_plot, rotation_mode in list_items:
+    for species, drug, common_name, type_group, only_mutations_associated_to_resistance, mic_fields_plot, rotation_mode, type_gwas in list_items:
         print(common_name)
 
         # define the outdir of the gwas
@@ -39511,7 +39821,7 @@ def get_figures_trees_with_association_info(DataDir, PlotsDir, species_to_gff, g
             df_assoc = df_gwas_filt[(df_gwas_filt.species==species) & (df_gwas_filt.drug==drug) & (df_gwas_filt.set_altered_genes.apply(lambda x: x=={gene_ID}))]
 
             # if there is assoc data
-            if len(df_assoc)>0:
+            if len(df_assoc)>0 and type_gwas!="all_vars":
                 print("working on assoc data")
 
                 if len(df_assoc)>1: raise ValueError("there should be 1 row in df_assoc")
@@ -39580,13 +39890,31 @@ def get_figures_trees_with_association_info(DataDir, PlotsDir, species_to_gff, g
         if len(list_target_type_genes)!=1: raise ValueError("list_target_type_genes should be 1")
         target_type_genes = next(iter(list_target_type_genes))
 
+        # define the filename of the plot
+        if type_gwas is None: filename_plot = "%s/%s_%s_%s.pdf"%(plots_dir, species, drug, common_name)
+        else: filename_plot = "%s/%s_%s_%s_%s.pdf"%(plots_dir, species, drug, common_name, type_gwas)
+
+        if type_gwas is None: tmpdir_files = "%s/%s_%s_%s_generateData"%(tmpdir, species, drug, common_name)
+        else: tmpdir_files = "%s/%s_%s_%s_%s_generateData"%(tmpdir, species, drug, common_name, type_gwas)
+
+
         # get plot
-        plot_tree_all_mutations_one_group_gwas_AF(outdir_drug, ASR_methods_phenotypes, target_type_vars, target_type_genes, target_type_mutations, target_type_collapsing, target_group_name, "%s/%s_%s_%s.pdf"%(plots_dir, species, drug, common_name), DataDir, species, drug, "%s/%s_%s_%s_generateData"%(tmpdir, species, drug, common_name), target_interesting_geneID_to_geneName, metadata_df, min_support, interesting_attributes=interesting_attributes, only_mutations_associated_to_resistance=only_mutations_associated_to_resistance, mic_fields_plot=mic_fields_plot, rotation_mode=rotation_mode)
-
-
+        plot_tree_all_mutations_one_group_gwas_AF(outdir_drug, ASR_methods_phenotypes, target_type_vars, target_type_genes, target_type_mutations, target_type_collapsing, target_group_name, filename_plot, DataDir, species, drug, tmpdir_files, target_interesting_geneID_to_geneName, metadata_df, min_support, interesting_attributes=interesting_attributes, only_mutations_associated_to_resistance=only_mutations_associated_to_resistance, mic_fields_plot=mic_fields_plot, rotation_mode=rotation_mode)
 
 
 # tree.write(outfile=treefile_rooted, format=2)
+
+def get_clinical_timepoint(r):
+    if pd.isna(r.timepoint) or pd.isna(r.clinical_patient_ID): return np.nan
+    elif float(r.timepoint)==int(r.timepoint): return str(int(r.timepoint))
+    else: raise ValueError("invalid x: %s"%(r.timepoint))
+
+def get_clinical_patientID(r):
+    if pd.isna(r.clinical_patient_ID): return np.nan
+    elif r.clinical_patient_ID.count(r.BioProject)==1 and r.clinical_patient_ID.startswith(r.species_name): return "_".join(r.clinical_patient_ID.split("_")[2:])
+    elif r.clinical_patient_ID.count(r.BioProject)==2 and r.clinical_patient_ID.startswith(r.species_name): return "_".join(r.clinical_patient_ID.split("_")[3:])
+    else: raise ValueError("invalid x: %s"%(r.clinical_patient_ID))
+
 
 
 def get_merged_table_strains(df_allStrainData, species_to_tree, TablesDir, df_Strain_metadata, df_table_drugs_gwas, CurDir):
@@ -39596,6 +39924,7 @@ def get_merged_table_strains(df_allStrainData, species_to_tree, TablesDir, df_St
     """
 
     print("getting strains table")
+    df_allStrainData = cp.deepcopy(df_allStrainData)
 
     # define outdir
     outdir_csvs = "%s/supplementary_tables"%TablesDir; make_folder(outdir_csvs)
@@ -39604,20 +39933,29 @@ def get_merged_table_strains(df_allStrainData, species_to_tree, TablesDir, df_St
     writer = pd.ExcelWriter('%s/TableS1.xlsx'%TablesDir, engine='openpyxl') 
 
     # first tab, all strains
-    df_first_tab = df_allStrainData[['species_name', 'BioProject', 'Run', 'numeric_sampleID', 'BioSample', 'type', 'mean_coverage', 'pct_covered', 'cladeID_systematic', 'cladeID_previous', 'clonal_cluster', 'collection_date', 'collection_latitude_longitude', 'collection_country', 'paper_link', 'resistance', 'susceptibility', 'intermediate_susceptibility', 'ANI_MIC', 'CAS_MIC', 'MIF_MIC', 'FLC_MIC', 'ITR_MIC', 'POS_MIC', 'VRC_MIC', 'IVZ_MIC', 'KET_MIC', 'MIZ_MIC', 'AMB_MIC', 'BVN_MIC', '5FC_MIC', 'TRB_MIC']]
+    df_allStrainData["clinical_timepoint"] = df_allStrainData.apply(get_clinical_timepoint, axis=1)
+    df_allStrainData["clinical_patient_ID"] = df_allStrainData.apply(get_clinical_patientID, axis=1)
+
+    df_first_tab = df_allStrainData[['species_name', 'BioProject', 'Run', 'strain', 'numeric_sampleID', 'BioSample', 'type', 'mean_coverage', 'pct_covered', 'cladeID_systematic', 'cladeID_previous', 'clonal_cluster', 'collection_date', 'collection_latitude_longitude', 'collection_country', "clinical_patient_ID", "clinical_timepoint", 'paper_link', 'resistance', 'susceptibility', 'intermediate_susceptibility', 'ANI_MIC', 'CAS_MIC', 'MIF_MIC', 'FLC_MIC', 'ITR_MIC', 'POS_MIC', 'VRC_MIC', 'IVZ_MIC', 'KET_MIC', 'MIZ_MIC', 'AMB_MIC', 'BVN_MIC', '5FC_MIC', 'TRB_MIC']]
 
     df_first_tab.to_excel(writer, sheet_name=f"All strains", index=False)
     save_df_as_tab(df_first_tab, "%s/TableS1-All_strains.csv"%outdir_csvs)
 
     # second tab, overview about strain metadata
-    df_Strain_metadata[['species', '# strains', '# clinical', '# environmental', '# other', '# clades', 'median pairwise SNPs/kb']].to_excel(writer, sheet_name=f"Strains overview", index=False)
+    df_Strain_metadata_write = df_Strain_metadata[['species', '# strains', '# clinical', '# environmental', '# other', '# clades', 'median pairwise SNPs/kb']]
+    df_Strain_metadata_write.to_excel(writer, sheet_name=f"Strains overview", index=False)
+    save_df_as_tab(df_Strain_metadata_write, "%s/TableS1-Strains_overview.csv"%outdir_csvs)
+
 
     # drug resistance information
-    df_table_drugs_gwas[["species", "drug", "drug class", 'R strains', 'S strains', 'R>S or S>R transitions', 'clades w/ R strain', 'clades w/ S strain']].to_excel(writer, sheet_name=f"GWAS drugs overview", index=False)
+    df_table_drugs_gwas_write = df_table_drugs_gwas[["species", "drug", "drug class", 'R strains', 'S strains', 'R>S or S>R transitions', 'clades w/ R strain', 'clades w/ S strain']]
+    df_table_drugs_gwas_write.to_excel(writer, sheet_name=f"GWAS drugs overview", index=False)
+    save_df_as_tab(df_table_drugs_gwas_write, "%s/TableS1-GWAS_drugs_overview.csv"%outdir_csvs)
 
     # reference genomes
     ref_genomes_df = pd.read_excel("%s/manually_curated_data/reference_genomes.xlsx"%CurDir)
     ref_genomes_df.to_excel(writer, sheet_name=f"Reference genomes", index=False)
+    save_df_as_tab(ref_genomes_df, "%s/TableS1-Reference_genomes.csv"%outdir_csvs)
 
     # tree
     trees_df = pd.DataFrame()
@@ -39636,6 +39974,26 @@ def get_merged_table_strains(df_allStrainData, species_to_tree, TablesDir, df_St
 
     trees_df.to_excel(writer, sheet_name=f"Strain trees", index=False)
     save_df_as_tab(trees_df, "%s/TableS1-Strain_trees.csv"%outdir_csvs)
+
+    # add the confirmation GWAS data
+    print("adding table confirmation GWAS")
+    df_gwas_confirmation = load_object("%s/processed_data/df_metadata_new_samples_GWAS_validation.py"%CurDir).rename(columns={"species":"species_name", "SampleName":"strain"})
+    auris_drugs = ["AMB", "ITR", "POS", "VRC"] 
+    df_gwas_confirmation  = df_gwas_confirmation[((df_gwas_confirmation.species_name=="Candida_glabrata") & (df_gwas_confirmation.FLC_resistance.isin({"R", "S"}))) | ((df_gwas_confirmation.species_name=="Candida_auris") & (df_gwas_confirmation[["%s_resistance"%d for d in auris_drugs]].isin({"R", "S"}).apply(any, axis=1)))]
+
+    all_drugs = ["FLC"] + auris_drugs
+    df_gwas_confirmation = df_gwas_confirmation[["species_name", "BioProject", "Run", "strain", "paper_link"] + ["%s_MIC"%d for d in auris_drugs] + ["%s_resistance"%d for d in all_drugs]].drop_duplicates().sort_values(by=["species_name", "BioProject", "Run"])
+
+    df_gwas_confirmation.to_excel(writer, sheet_name=f"GWAS confirmation strains", index=False)
+    save_df_as_tab(df_gwas_confirmation, "%s/TableS1-GWAS_confirmation_strains.csv"%outdir_csvs)
+
+    # check
+    for spp, drug in ([("Candida_glabrata", "FLC")] + [("Candida_auris", d) for d in auris_drugs]):
+        print(spp, drug)
+
+        samples_gwas = sorted(get_tab_as_df_or_empty_df("%s/data_gwas_validation/%s/GWAS_results/%s/resistance_df.tab"%(CurDir, spp, drug)).sampleID)
+        samples_df = sorted(df_gwas_confirmation[(df_gwas_confirmation.species_name==spp) & (df_gwas_confirmation["%s_resistance"%drug].isin({"R", "S"}))].Run)
+        if samples_gwas!=samples_gwas: raise ValueError("dif samples")
 
     # strains
     print("writing")
@@ -39850,3 +40208,1572 @@ def get_merged_table_GWAS(gwas_table_df, gwas_results_df_more_than_1_spp_OGs, gw
     # write
     print("writing")
     writer.save()
+
+def get_df_different_vars_file_pairwise_serial_isolates(ProcessedDataDir, DataDir, df_all, list_comparisons):
+
+    """Creates df with different variants across pairwise serial isolates"""
+
+   # create df of pairwise vars
+    df_different_vars_file = "%s/serial_isolate_comparisons_sets_diff_vars.py"%ProcessedDataDir
+    if file_is_empty(df_different_vars_file):
+        print("Generating the types of vars")
+
+        df_different_vars = pd.DataFrame()
+
+        for type_var in ["SV", "CNV", "SNP", "IN/DEL"]:
+            for species in sorted(set(df_all.species_name)):
+                #if species!="Candida_tropicalis": continue
+                print(type_var, species)
+
+                # map each sample to the vars
+                print("gettting sample to vars")
+                expected_samples = set(df_all[df_all.species_name==species].sampleID)
+                taxID = sciName_to_taxID[species]
+                taxID_dir = "%s/%s_%i"%(DataDir, species, taxID)
+                sampleID_to_setVars, varID_to_numericID = get_sample_to_setVars_for_typeVar(taxID_dir, type_var, taxID_to_ploidy[taxID], expected_samples)
+                numID_to_realVarID = {n : v for v,n in varID_to_numericID.items()}
+
+                # add comparisons to the df
+                print("going through each comparison")
+                comparisons = [c for c in list_comparisons if c[0]==species]
+
+                for (spp, s1, s2) in comparisons:
+
+                    new_vars = sorted(set(map(lambda x: numID_to_realVarID[x], sampleID_to_setVars[s2].difference(sampleID_to_setVars[s1]))))
+
+                    df = pd.DataFrame({"variantID_across_samples":new_vars})
+                    df["species"] = species
+                    df["bg_sample"] = s1
+                    df["fg_sample"] = s2
+                    df["comparisonID"] = "%s_%s-to-%s"%(species, s1, s2)
+                    df["type_var"] = type_var
+                    df_different_vars = df_different_vars.append(df).reset_index(drop=True)
+
+        # save
+        print("saving")
+        save_object(df_different_vars, df_different_vars_file)
+
+    print("loading")
+    return load_object(df_different_vars_file)
+
+
+def get_df_different_vars_file_pairwise_serial_isolates_functional(df_different_vars, df_different_vars_functional_file, ProcessedDataDir, metadata_df, gene_features_df, species_to_gff, df_coverage_per_gene):
+
+    """Generates a df with variantID_across_samples, species, comparisonID, type_var_functional and Gene. type_var_functional should be if_INDEL, DEL, DUP and nsyn_SNP. This df should be already filtered to keep relevant comparisons. Inspiration from get_df_diversity_piN_piS."""
+
+
+    if file_is_empty(df_different_vars_functional_file):
+        print("generating df_different_vars_functional_file")
+
+        # init dataset
+        df_different_vars_functional = pd.DataFrame()
+        for species in sorted(set(df_different_vars.species)):
+            print(species)
+
+            # get df with relevant comparisons
+            df_different_vars_s = df_different_vars[df_different_vars.species==species]
+            interesting_samples =  set(map(str, set(df_different_vars_s.bg_sample).union(set(df_different_vars_s.fg_sample))))
+            sorted_samples = sorted(interesting_samples)
+
+            # load df with variant presence
+            ProcessedDataDir_piNpiS = "%s/getting_df_diversity_all_piN_piS"%ProcessedDataDir
+            all_vars_df = load_object("%s/%s_all_vars_with_infoASR_piN_piS.py"%(ProcessedDataDir_piNpiS, species)) # df with variant absence/presence
+            all_vars_df = all_vars_df[all_vars_df.sampleID.isin(interesting_samples)]
+            if set(all_vars_df.sampleID)!=interesting_samples: raise ValueError("all samples should have some variant")
+            mis_vars = set(df_different_vars_s.variantID_across_samples).difference(set(all_vars_df.variantID_across_samples))
+            if len(mis_vars)>0: raise ValueError("There are some vars in df_different_vars_s and not in all_vars_df")
+
+            # load df with variant annotation
+            all_annotations_df_species = load_object("%s/%s_all_annotations_df_species_filt_piN_piS.py"%(ProcessedDataDir_piNpiS, species)) # df with  annotations. It has type_var_functional
+            interesting_vars = set(all_vars_df.variantID_across_samples)
+            all_annotations_df_species = all_annotations_df_species[all_annotations_df_species.variantID_across_samples.isin(interesting_vars)]
+            vars_no_annot = interesting_vars.difference(set(all_annotations_df_species.variantID_across_samples))
+            strange_vars = set(all_annotations_df_species.variantID_across_samples).difference(interesting_vars)
+            if len(strange_vars)>0: raise ValueError("There are strange_vars")
+            if len(vars_no_annot)>0: print("There are %i vars no annot"%(len(vars_no_annot)))
+
+            # get gene info
+            gff_df = load_gff3_intoDF(species_to_gff[species])
+            gene_features_df_s = gene_features_df[(gene_features_df.species==species)]
+            pseudogenes = set(gene_features_df_s[gene_features_df_s.feature_type.isin({"pseudogene", "pseudogene|Uncharacterized"})].gff_upmost_parent)
+            protein_coding_genes = set(gff_df[gff_df.feature.isin({"CDS", "mRNA"})].upmost_parent).difference(pseudogenes)
+
+            # get gene info about coverage and different mutation types
+            print("getting correct genes")
+            sample_to_genesCorrectCoverage = dict(get_sample_to_genesCorrectCoverage_piN_piS(df_coverage_per_gene, species, protein_coding_genes, interesting_samples))
+            sample_to_genesNoTruncation = get_sample_to_genes_NoTruncation_or_NoSV_piN_piS(all_vars_df, all_annotations_df_species, sorted_samples, protein_coding_genes, species, "small_vars_truncating")
+            sample_to_genesNoSVs = get_sample_to_genes_NoTruncation_or_NoSV_piN_piS(all_vars_df, all_annotations_df_species, sorted_samples, protein_coding_genes, species, "nonSyn_SV")
+
+            # keep relevant annotations annotations only of protein coding genes that are from interesting comparisons
+            annot_df = all_annotations_df_species[(all_annotations_df_species.Gene.isin(protein_coding_genes)) & (all_annotations_df_species.type_var_functional.isin({'SNP', 'if_INDEL', 'DUP', 'DEL'})) & (all_annotations_df_species.variantID_across_samples.isin(set(df_different_vars_s.variantID_across_samples))) & (all_annotations_df_species.overlaps_simple_repeats==False)]
+            annot_df = annot_df[(annot_df.type_var_functional.isin({'if_INDEL', 'DUP', 'DEL'})) | (annot_df.is_synonymous==False)]
+
+            # keep only interesting variants that have relevant annotations
+            df_different_vars_s = df_different_vars_s[df_different_vars_s.variantID_across_samples.isin(set(annot_df.variantID_across_samples))]
+            interesting_samples_filt =  set(map(str, set(df_different_vars_s.bg_sample).union(set(df_different_vars_s.fg_sample))))
+            if interesting_samples_filt!=interesting_samples: raise ValueError("some samples lost during filtering")
+
+            # add info to df_different_vars_s
+            df_different_vars_s = df_different_vars_s.merge(annot_df[["variantID_across_samples", "Gene", "type_var_functional"]].drop_duplicates(), on="variantID_across_samples", how="left", validate="many_to_many")
+
+            print("adding tpes of fg and bg samples...")
+            for sfield in ["fg_sample", "bg_sample"]:
+                for field_suffix, dict_sample_to_gene in [("correct_coverage_in_gene", sample_to_genesCorrectCoverage), ("gene_not_truncated", sample_to_genesNoTruncation), ("gene_no_SV", sample_to_genesNoSVs)]:
+                    df_different_vars_s["%s_%s"%(sfield, field_suffix)] = df_different_vars_s.apply(lambda r: r.Gene in dict_sample_to_gene[r[sfield]], axis=1)
+
+            check_no_nans_in_df(df_different_vars_s)
+
+            # keep
+            df_different_vars_functional = df_different_vars_functional.append(df_different_vars_s).reset_index(drop=True)
+
+        # save
+        print("saving...")
+        save_object(df_different_vars_functional, df_different_vars_functional_file)
+
+    return load_object(df_different_vars_functional_file)
+
+
+def plot_pairwise_differences_close_serial_isolates(df_different_vars, PlotsDir, species_to_ref_genome):
+
+    """Plots the number of pairwise differnces per isolate"""
+
+    print("plotting distribution of new SNPs/kb")
+
+    # get a df with the pairwise dfifferences across serial isolates
+    df_pairwiseDifferences = pd.DataFrame({"new_vars" : df_different_vars[df_different_vars.type_var=="SNP"].groupby(["species", "comparisonID"]).apply(len)}).reset_index(drop=False)
+    spp_to_genome_len = {spp :  sum(get_chr_to_len(refgenome).values()) for spp, refgenome in species_to_ref_genome.items()}
+    df_pairwiseDifferences["genome_len"] = df_pairwiseDifferences.species.map(spp_to_genome_len)
+    df_pairwiseDifferences["SNPs/kb"] = (df_pairwiseDifferences.new_vars / df_pairwiseDifferences.genome_len)*1000
+    check_no_nans_series(df_pairwiseDifferences["SNPs/kb"])
+    df_pairwiseDifferences["log(SNPs/kb)"] = np.log10(df_pairwiseDifferences["SNPs/kb"])
+    check_no_nans_series(df_pairwiseDifferences["log(SNPs/kb)"])
+    df_pairwiseDifferences["short_spp"] = "C. " + df_pairwiseDifferences.species.apply(lambda x: x.split("_")[1])
+
+    # plot distribution
+    fig = plt.figure(figsize=(5,3))
+    
+    ax = sns.violinplot(data=df_pairwiseDifferences, x="short_spp", y="log(SNPs/kb)")#, hue="species", palette=species_to_color)
+    
+    ax = sns.stripplot(data=df_pairwiseDifferences, x="short_spp", y="log(SNPs/kb)", dodge=True, alpha=1, edgecolor='gray', linewidth=1)
+    
+    for y in [0.1, 1]: plt.axhline(np.log10(y), linewidth=.7, color="gray", linestyle="--")
+    #ax.set_yticklabels([str(10**y)  for y in ax.get_yticks()])
+
+    yticks = [-2, -1, 0, 1]
+    ax.set_yticks(yticks)
+
+    ax.set_yticklabels([str(10**(y))  for y in yticks])
+    ax.set_ylabel("new SNPs / kb")
+    ax.set_xlabel("species")
+    ax.set_title("Pairwise genetic distance in serial isolates")
+
+
+    plt.plot()
+    fig.savefig("%s/genetic_distance_serial_isolates.pdf"%PlotsDir, bbox_inches="tight")
+
+
+    return df_pairwiseDifferences
+
+
+def get_is_correct_gene_df_vars_funcional_r(r):
+
+    """Takes a row of df_vars_functional df and returns whether it is valid for selection analyses"""
+
+    # for SNPs and indels, only consider genes where both samples have all signs of correct coverage
+    if r.type_var_functional in {"SNP", "if_INDEL"}: fields_true = ["%s_%s"%(f, s) for f in ["fg_sample", "bg_sample"] for s in ["correct_coverage_in_gene", "gene_not_truncated", "gene_no_SV"]]
+
+    # for other types of variants you want to ensure that the parent gene (bg_sample) was OK
+    elif r.type_var_functional in {"DEL", "DUP"}: fields_true = ["bg_sample_%s"%s for s in ["correct_coverage_in_gene", "gene_not_truncated", "gene_no_SV"]]
+
+    else: raise ValueError("not valid %s"%r.type_var_functional)
+
+    # return whether all the true fields are actually true
+    return all([r[f]==True for f in fields_true])
+
+def serial_isolates_selection_analysis(metadata_df, ProcessedDataDir, DataDir, PlotsDir, species_to_ref_genome, gene_features_df, species_to_gff, df_coverage_per_gene, df_selection, df_selection_scores):
+
+    """Analysis of serial isolates' selection"""
+
+    ######## GATHERING METADATA ##########
+
+    # get df with serial isolates
+    df_all = metadata_df[(~pd.isna(metadata_df.clinical_patient_ID)) & (~pd.isna(metadata_df.timepoint))]
+    df_all["clinical_patient_ID"] = df_all.clinical_patient_ID # + "_" + df_all.species_name
+    pID_to_nsamples = df_all[["clinical_patient_ID", "sampleID"]].drop_duplicates().groupby("clinical_patient_ID").apply(len)
+    df_all["nsamples_w_pID"] = df_all.clinical_patient_ID.apply(lambda x: pID_to_nsamples[x])
+    df_all = df_all[(df_all.nsamples_w_pID>1) & (df_all.type=="clinical")]
+    df_all = df_all.sort_values(by=["clinical_patient_ID", "timepoint", "median_median_reads_per_gene"], ascending=[True, True, False]).drop_duplicates(subset=["clinical_patient_ID", "timepoint"]) # keep one timepoint for each
+
+    # print
+    print("# samples belonging to serial isolates:\n", df_all.groupby("species_name").apply(len))
+
+    # checks
+    if not all((df_all.timepoint)==(df_all.timepoint.apply(int))): raise ValueError("the timepoints should be int")
+    if len(df_all[["clinical_patient_ID", "timepoint"]].drop_duplicates())!=len(df_all): raise ValueError("For each patient, timepoints should be unique")
+    
+    # define the comparisons of samples
+    list_comparisons = []
+    for pID in sorted(set(df_all.clinical_patient_ID)):
+        df_p = df_all[df_all.clinical_patient_ID==pID].sort_values(by="timepoint").reset_index(drop=True)
+        species_p = df_p.species_name.iloc[0]
+
+        for I in range(1, len(df_p)): 
+            sample1 = df_p.iloc[I-1].sampleID
+            sample2 = df_p.iloc[I].sampleID
+            list_comparisons.append((species_p, sample1, sample2))
+
+    print("# pairwise serial isolate comparisons per species:\n%s"%("\n".join(["%s: %i"%(s, sum([c[0]==s for c in list_comparisons])) for s in sorted(set(df_all.species_name))])))
+
+    ######################################
+
+    ########### DATA GATHERING #############
+
+    # create df of pairwise vars
+    df_different_vars_all = get_df_different_vars_file_pairwise_serial_isolates(ProcessedDataDir, DataDir, df_all, list_comparisons)
+
+    # print numbers
+    for s in ["Candida_albicans", "Candida_auris", "Candida_glabrata", "Candida_tropicalis"]: 
+        print(s, len(set(df_different_vars_all[df_different_vars_all.species==s].comparisonID)))
+
+    # plot pairwise differences
+    df_pairwise_differences = plot_pairwise_differences_close_serial_isolates(df_different_vars_all, PlotsDir, species_to_ref_genome)
+
+    # init df with all
+    df_different_vars_functional_all = pd.DataFrame()
+
+    # go through different thresholds
+    for thsd_clonal in [1]:  # 0.1
+
+        # keep df with comparisons with <thsd_clonal
+        clonal_comparisons = set(df_pairwise_differences[df_pairwise_differences["SNPs/kb"]<=thsd_clonal].comparisonID)
+        df_different_vars = df_different_vars_all[df_different_vars_all.comparisonID.isin(clonal_comparisons)]
+        print("# comparisons <%.1f new SNP/kb:\n%s"%(thsd_clonal, "\n".join(["%s: %i"%(s, len(set(df_different_vars[df_different_vars.species==s].comparisonID))) for s in sorted(set(df_different_vars.species))])))
+
+        # create df with the if_INDEL, DEL, DUP and nsyn_SNP. Note that nsyn_SNP have type_var_function=="SNP", but only ns SNPs
+        df_different_vars_functional = get_df_different_vars_file_pairwise_serial_isolates_functional(df_different_vars, "%s/df_different_vars_functional_clonal_isolates_t=%s.py"%(ProcessedDataDir, thsd_clonal), ProcessedDataDir, metadata_df, gene_features_df, species_to_gff, df_coverage_per_gene)
+        
+        # filter the df to keep onlt relevant genes in each comparison (inspired by get_df_pN_pS_one_sample)
+        df_different_vars_functional = df_different_vars_functional[df_different_vars_functional.apply(get_is_correct_gene_df_vars_funcional_r, axis=1)]
+        df_different_vars_functional["thsd_clonal"] = thsd_clonal
+        df_different_vars_functional_all = df_different_vars_functional_all.append(df_different_vars_functional).reset_index(drop=True)
+
+    ########################################
+
+    ######### REPORT ANALYSIS ##########    
+
+    # define all genes
+    species_to_all_genes = {}
+    for species in ["Candida_albicans", "Candida_auris", "Candida_glabrata", "Candida_tropicalis"]: 
+        gff_df = load_gff3_intoDF(species_to_gff[species])
+        gene_features_df_s = gene_features_df[(gene_features_df.species==species)]
+        pseudogenes = set(gene_features_df_s[gene_features_df_s.feature_type.isin({"pseudogene", "pseudogene|Uncharacterized"})].gff_upmost_parent)
+        species_to_all_genes[species] = set(gff_df[gff_df.feature.isin({"CDS", "mRNA"})].upmost_parent).difference(pseudogenes)
+
+
+    # set parms
+    min_ncomparisons = 2
+
+    for thsd_clonal in [1]: # 0.1
+        print()
+
+        # get df
+        df_vars = df_different_vars_functional_all[df_different_vars_functional_all.thsd_clonal==thsd_clonal]
+
+        # go through each species and type vars
+        for species in ["Candida_albicans", "Candida_auris", "Candida_glabrata", "Candida_tropicalis"]:
+            for type_var in ["SNP", "if_INDEL", "DEL", "DUP"]:
+
+                # define genes under selection
+                genes_S_measured = set(df_selection_scores[(df_selection_scores.species==species) & (df_selection_scores.type_var==type_var)].gff_upmost_parent)
+                genes_selection = set(df_selection[(df_selection.species==species) & (df_selection.type_var==type_var)].gff_upmost_parent)
+
+                # define genes recurrently mutated in paired serial isolates
+                df_v = df_vars[(df_vars.species==species) & (df_vars.type_var_functional==type_var)]
+                gene_to_ncomparisons = df_v[["Gene", "comparisonID"]].drop_duplicates().groupby("Gene").apply(len)
+                genes_serialIsolates = set(gene_to_ncomparisons[gene_to_ncomparisons>=min_ncomparisons].index)
+                if len(genes_serialIsolates)==0: continue
+
+                # define all genes as the p coding genes
+                all_genes = species_to_all_genes[species]
+
+                # define all genes as those where either selection score was measured or are in df_v (some variant in serial isolates)
+                #all_genes = set(df_v.Gene).union(genes_S_measured)
+
+                # define two-by-two table and make a fisher test
+                contingency_table = [[genes_selection.intersection(genes_serialIsolates) , genes_selection.difference(genes_serialIsolates)], 
+                                     [genes_serialIsolates.difference(genes_selection) , all_genes.difference(genes_selection).difference(genes_serialIsolates)]]
+                contingency_table = pd.DataFrame(contingency_table).applymap(len)
+
+                # measure fisher test
+                OR, p_fisher = stats.fisher_exact(contingency_table, alternative="greater")
+                text_print = "%s-%s. tshd=%s. %i sel, %i ser, %i comparisons, %i shared. OR=%.1f, p=%.4f"%(species, type_var, thsd_clonal, len(genes_selection), len(genes_serialIsolates), len(set(df_v.comparisonID)), len(genes_selection.intersection(genes_serialIsolates)), OR, p_fisher)
+                if p_fisher<0.05: text_print+="**"
+                print(text_print)
+
+
+    ###################################
+
+def get_geneID_gwas_hit(r):
+
+    """Gets a GWAS hit and returns the gene ID"""
+
+    if r.type_collapsing=="none": return r.description.split("(")[1].split(",")[0]
+    elif r.type_collapsing=="domains": 
+        #return r.description.split("(")[0].rstrip().split()[-1]
+        return r.description.split("from gene")[1].lstrip().split()[0]
+        
+    elif r.type_collapsing=="genes": return r.description.split("(")[0].rstrip().split()[-1]
+    else: raise ValueError("invalid %s, %s"%(r.type_collapsing, r.description))
+
+
+def get_MIC_float(x):
+
+    """Gets MIC as a float"""
+
+    if pd.isna(x): 
+        #print("WARNING: x is NaN")
+        return np.nan
+
+    if type(x)==float or type(x)==int: return float(x)
+    elif type(x)==str:
+
+        # change
+        try: float_x = float(x.replace(",", ".").replace("<=", "").replace("≥", "").replace("≤", "").replace("<", "").replace(">", "").replace("·", "."))
+        except: raise ValueError("float conversion not possible for %s"%x)
+
+        # return
+        if x.startswith("<=") or x.startswith("≤") or x.startswith("<"): return float_x/2
+
+        elif x.startswith("≥") or x.startswith(">"): return float_x*2
+
+        else: return float_x
+
+    else: raise ValueError("invalid %s. %s"%(x, type(x)))
+
+def get_species_to_drug_to_breakpoint(ManualData_dir, all_drugs):
+
+    """Gets the breakpoints of each drug/species. Equivalent to get_df_metadata_with_resistance_and_others"""
+
+    # load the EUCAST breakpoints
+    df_eucast_bps = pd.read_excel("%s/Eucast_MIC_breakpoints_perSpecies.xlsx"%ManualData_dir).set_index("species").applymap(float)
+
+    # merge EUCAST and manual MICs
+    df_eucast_bps.columns = [c.split("_")[0] for c in df_eucast_bps.columns]
+    df_manual_MICs = pd.read_excel("%s/ManualMIC_breakpoints.xlsx"%ManualData_dir).pivot(index="species", columns="drug", values="breakpoint").applymap(float)
+
+    # define the dict
+    species_to_drug_to_breakpoint = {}
+    for species in sorted_species_byPhylogeny:
+        for drug in all_drugs:
+
+            # define bps
+            bp_eucast = df_eucast_bps.loc[species, drug]
+            if drug in df_manual_MICs.columns and species in df_manual_MICs.index: bp_manual = df_manual_MICs.loc[species, drug]
+            else: bp_manual = np.nan
+
+            if not pd.isna(bp_eucast): bp = bp_eucast
+            elif not pd.isna(bp_manual): bp = bp_manual
+            else: continue
+
+            species_to_drug_to_breakpoint.setdefault(species, {}).setdefault(drug, bp)
+
+    return species_to_drug_to_breakpoint
+
+
+def get_SIR_resistance_drug_one_sample(r, drug, species_to_drug_to_breakpoint):
+
+    """Returns I, S, R for one drug in one row (sample) of the df"""
+
+    # define fields
+    resistance = r["%s_resistance"%drug]
+    mic = r["%s_MIC"%drug]
+
+    # if both are nans, set as nan
+    if pd.isna(resistance) and pd.isna(mic): return np.nan
+
+    # if the resistance is already defined, return it
+    elif (not pd.isna(resistance)) and (pd.isna(mic)): return resistance
+
+    # based on MIC
+    elif (pd.isna(resistance)) and (not pd.isna(mic)): 
+
+        # get breakpoint
+        bp = species_to_drug_to_breakpoint[r.species][drug]
+        if mic>=(2*bp): return "R"
+        elif mic<=(0.5*bp): return "S"
+        else: return "I"
+
+    # denbug
+    else: raise ValueError("invalid %s/%s"%(resistance, mic))
+
+
+def get_metadata_df_GWAS_validation(metadata_dir, CurDir):
+
+    """Gets a metadata df with the studies published after 2020 for the validation of GWAS hits. This df has all the information for studies where interesting data was available following the following pubmed queries at 12/06/2021:
+
+    - For C. glabrata I looked for  '("candida glabrata"[All Fields]) AND (2020:2023[pdat]) AND genome'.
+    - For C. auris I looked for '("candida auris"[All Fields]) AND (2020:2023[pdat]) AND genome AND susceptibility' (only studies of azoles and/or ampB). I added susceptibility because only genome was rendering >100 papers. Now I get ~35
+    - For both species I looked for studies in my radar over the last 2 years
+    - I only include clinical isolates, although some environmental isolates have been found
+
+    Save for each bioproject. 
+
+    Notes about projects with promising, but inaccurated data:
+
+    - "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10218836/". Paper about glabrata serial isolates. No way to link runs to metadata. Bioproject "PRJNA949257".
+    - "PRJNA664290", "https://pubmed.ncbi.nlm.nih.gov/34060660/". Sequencing is only nanopore for glabrata
+    - https://pubmed.ncbi.nlm.nih.gov/37066226/. Data not available.
+    - https://pubmed.ncbi.nlm.nih.gov/36052507/. SRA data not available 
+    - https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9467277/. SRA data not available
+    - https://www.amjtransplant.org/article/S1600-6135(22)21650-5/fulltext Data not availble
+    - https://pubmed.ncbi.nlm.nih.gov/32072717/ Data not available
+
+    """
+
+    # make folder
+    print("fetching metadata for GWAS validation")
+    make_folder(metadata_dir)
+
+    # define manual metadata dir
+    ManualData_dir = "%s/manually_curated_data"%CurDir
+
+    # get run information all
+    interesting_taxIDs = sorted(set.union(*[set(taxID_to_taxIDs[x]) for x in [5478, 498019] ]))
+    df_run_info_all =  get_allWGS_runInfo_fromSRA_forTaxIDs("%s/run_IDs_unfiltered"%metadata_dir, interesting_taxIDs, None, replace=False, min_coverage=30, return_unfiltered_df=True)
+
+    # define mappings
+    drug_to_short = {"Anidalufungin":"ANI", "Micafungin":"MIF", "Caspofungin":"CAS", "5-Flucytosine":"5FC", "Posaconazole":"POS", "Voriconazole":"VRC", "Itraconazole":"ITR", "Fluconazole":"FLC", "Amphotericin B":"AMB", "isavuconazole":"IVZ", "ibrexafungerp":"IBX"}
+
+    sorted_drugs = sorted(set(drug_to_short.values()))
+
+    # define the data
+    list_data = [
+                 ("PRJEB40738", "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8622182/", "glabrata"), # Danish isolates
+                 ("PRJNA738673", "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9662024/", "glabrata"), # new data for Pais 2022
+                 ("PRJNA699880", "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9258547/", "glabrata"), # Disclosing azole resistance ...    
+                 ("PRJNA589840", "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9769630/", "glabrata"), # Stefaninni 2022
+                 ("PRJNA669061", "https://academic.oup.com/genetics/article/221/1/iyac031/6535245", "glabrata"), # Helmsteter 2022
+
+                 ("PRJNA693430", "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10132836/", "auris"), # BenAbid 2023
+                 ("PRJNA640677", "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9295560/", "auris"), # Jacobs 2022
+                 ("PRJNA737309", "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/", "auris"),
+                 ("PRJNA549344", "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/", "auris"),
+                 ("PRJNA655187", "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7919374/", "auris")
+                 ]
+
+    # init df
+    metadata_cols = ["BioProject", "Run", "SampleName", "species", "paper_link"] + ["%s_MIC"%d for d in sorted_drugs] + ["%s_resistance"%d for d in sorted_drugs]
+    df_metadata_all = pd.DataFrame(columns=metadata_cols)
+
+    # iterate through bioprohejects and add 
+    for bioproject, paper_link, species_name in list_data:
+        #print(bioproject, species_name)
+
+        if bioproject=="": raise ValueError("bp should not be ''")
+
+        # get the biosample metadata with Run info
+        bioproject_bioSample_file = "%s/%s_BioSampleData.tab"%(metadata_dir, bioproject)
+        df_BioSample = get_BioSample_df_for_BioProject(bioproject, bioproject_bioSample_file)
+        df_run = df_run_info_all[(df_run_info_all.BioProject==bioproject) & (df_run_info_all.BioSample.isin(set(df_BioSample.BioSample)))]
+        df_BioSample = df_BioSample[df_BioSample.BioSample.isin(set(df_run.BioSample))]
+        df_BioSample = df_BioSample.merge(df_run[["BioSample"] + [f for f in df_run.keys() if f not in set(df_BioSample)]], on="BioSample", validate="one_to_one", how="left")
+        check_no_nans_series(df_BioSample.Run)
+
+        # get the metadata for the bp
+        if bioproject=="PRJEB40738":
+
+            # Paper about 8 C. glabrata isoalates. Danish Whole-Genome-Sequenced Candida albicans and Candida glabrata Samples Fit into Globally Prevalent Clades. Two are azole resistant
+
+            # define the df
+            df = pd.read_excel("%s/Szarvas2021_Supplementary_Data_2.xlsx"%ManualData_dir, "MIC results")
+            df = df[df.Species=="Candida glabrata"]
+            df["species"] = "Candida_glabrata"
+            df["Isolate ID"] = df["Isolate ID"].apply(lambda x: x.replace(" ", "-"))
+            all_isolates = set(df["Isolate ID"])
+            df_BioSample = df_BioSample[df_BioSample["sample name"].isin(all_isolates)]
+            df_BioSample["Isolate ID"] = df_BioSample["sample name"]
+            if set(df_BioSample["sample name"])!=all_isolates: raise ValueError("not 1-1 mapping biosamples")
+            if len(set(df_BioSample.BioSample))!=len(df_BioSample): raise ValueError("BioSample should be unique")
+            df = df.merge(df_BioSample[["Isolate ID", "Run"]], on="Isolate ID", validate="one_to_one", how="left")
+            df["SampleName"] = df["Isolate ID"]
+
+            # modify the MIC data
+            for f in [field for field in df.keys() if "mg/L" in field]: df["%s_MIC"%(drug_to_short[f.rstrip(" (mg/L)")])] = df[f].apply(get_MIC_float)
+
+        elif bioproject=="PRJNA738673":
+
+            """
+            Paper about three azole-resistant C. glabrata isolates. Pais 2022. They state that they are azole-resistant. Not clear which azoles, but it seems flc
+            The data is from these papers:
+
+            - New data (3 isolates with imprecise susceptibility). PRJNA738673. Three azole resistant strains (2 with no new PDR1 mutations).
+            - cite 41. Pais 2019. PRJNA525402. Already used.
+            - cite 44. McTaggart 2020. PRJNA610214. Already used.
+            - cite 45. Barber 2019. PRJNA483064. Already used.
+            - cite 46. Biswas 2018. Already used before.
+            - cite 47. Carreté 2019. Already used.
+            - cite 48. Vale-Silva 2017. PRJNA374542. Already used.
+            - cite 60. Galocha 2022. IV evolution. Not usable
+            
+            I decide to used only the new data.
+            """
+
+            df = df_BioSample[["BioProject", "Run", "SampleName"]]
+            df["FLC_MIC"] = 64.0
+
+        elif bioproject=="PRJNA699880":
+
+            # Paper about sequencing azole resistant strains in C. glabrata. Sequencing of ISTB218 and ISTA29. Disclosing azole resistance mechanisms in resistant Candida glabrata strains encoding wild-type or gain-of-function CgPDR1 alleles through comparative genomics and transcriptomics
+
+            strain_to_susceptibility = {"ISTB218": {"FLC_MIC":128.0, "VRC_MIC":4.0}, # resistant (Table S1 in the paper)
+                                        "ISTA29": {"FLC_MIC":4.0, "VRC_MIC":0.25} # susceptible (MICs are approximate)
+                                        } # From Table S1 in the paper
+
+
+            df = df_BioSample[["BioProject", "Run", "SampleName"]]
+            for f in ["FLC_MIC", "VRC_MIC"]: df[f] = df.SampleName.apply(lambda s: strain_to_susceptibility[s][f])
+
+        elif bioproject=="PRJNA589840":
+
+            # Genomic Assembly of Clinical Candida glabrata (Nakaseomyces glabrata) Isolates Reveals within-Species Structural Plasticity and Association with In Vitro Antifungal Susceptibility. There are 1-30 strains. I validated that the VRC and FLC breakpoints are equivalent. I define manually based on Fig3 the resistance types, only keeping S and R strong.
+
+            drug_to_susc_type = {"CAS": {"S":{5, 12, 28, 29}, "R":{1, 4, 11, 18, 22, 27}},
+                                 "5FC": {"S":{17, 25, 30}, "R":{2, 6, 8, 16, 19, 22, 24, 28}},
+                                 "FLC": {"S":{5, 8, 13, 14, 21, 24, 26, 29, 30}, "R":{2, 7, 10, 11, 12, 16, 19, 20, 23, 25}},
+                                 "VRC": {"S":{1, 5, 9, 18, 21, 22, 24, 26, 30}, "R":{2, 3, 19, 27}}}
+
+            df = df_BioSample[["BioProject", "Run", "SampleName"]]
+
+            # define functions to transform strains
+            def get_strainID_as_str(x):
+                if x<10: return "CG_UHB_0%i"%x 
+                elif x>=10: return "CG_UHB_%i"%x 
+
+            # add data for drugs
+            for d, susc_dict in drug_to_susc_type.items():
+
+                all_strains = set(map(get_strainID_as_str, range(1, 30+1)))
+                R_strains = set(map(get_strainID_as_str, susc_dict["R"]))
+                S_strains = set(map(get_strainID_as_str, susc_dict["S"]))
+
+                def get_resistance_status(s):
+                    if s in R_strains: return "R"
+                    elif s in S_strains: return "S"
+                    elif s in all_strains: return "I"
+                    else: raise ValueError("invalid %s"%s)
+
+                df["%s_resistance"%d] = df.SampleName.apply(get_resistance_status)
+
+        elif bioproject=="PRJNA669061":
+
+            # data from Population genetics and microevolution of clinical Candida glabrata reveals recombinant sequence types and hyper-variation within mitochondrial genomes, virulence genes, and drug targets. susceptibility for microevolution patients  
+
+            df = pd.read_excel("%s/Helmstetter2022_table3.xlsx"%ManualData_dir)
+            df["Strain"] = "CG" + df.Strain
+            all_strains = set(df.Strain)
+
+            df_BioSample["Strain"] = df_BioSample.SampleName
+            df_BioSample = df_BioSample[df_BioSample.Strain.isin(all_strains)]
+
+            missing_strains = all_strains.difference(set(df_BioSample.Strain))
+            if len(missing_strains)>0: raise ValueError("There are some samples in df not in biosample: %s"%missing_strains)
+            df = df[["Strain", "FLC_MIC"]].merge(df_BioSample[["Strain", "SampleName", "Run"]], on="Strain", how="left", validate="one_to_one")
+
+        elif bioproject=="PRJNA693430":
+
+            # Molecular characterization of Candida auris outbreak isolates in Qatar from patients with COVID-19 reveals the emergence of isolates resistant to three classes of antifungal drugs. They sequence many clinical isolates and provide AST data
+
+            # load data and change MIC fields
+            df = pd.read_excel("%s/BenAbid2023_Table1.xlsx"%ManualData_dir)
+            df = df[["ID"] + [f for f in df.keys() if f.endswith("_MIC")]].rename(columns={"ID":"SampleName"})
+            mic_fs = [f for f in df.keys() if f.endswith("_MIC")]
+            for f in mic_fs: df[f] = df[f].apply(get_MIC_float)
+         
+            # add biosample data
+            all_strains = set(df.SampleName)
+            df_BioSample = df_BioSample[df_BioSample.SampleName.isin(all_strains)]
+            missing_strains = all_strains.difference(set(df_BioSample.SampleName))
+            if len(missing_strains)>0: raise ValueError("There are some samples in df not in biosample: %s"%missing_strains)
+            df = df[["SampleName"] + mic_fs].merge(df_BioSample[["SampleName", "Run"]], on="SampleName", how="left", validate="one_to_one")
+
+        elif bioproject=="PRJNA640677":
+
+            # Candida auris Pan-Drug-Resistant to Four Classes of Antifungal Agents. Jacobs 2023
+            df = pd.read_excel("%s/Jacobs2022_Table1.xlsx"%ManualData_dir)
+
+            # define the MICs. There is data for more than 1 type of calculation
+            drugs = sorted({f.split("_")[0] for f in df.keys() if "_MIC_" in f})
+            mic_fs = []
+            for d in drugs:
+                mic_f = "%s_MIC"%d
+                def get_average_mic(r):
+
+                    # get average
+                    fs = [f for f in r.keys() if f.startswith("%s_"%d)]
+                    mics = [get_MIC_float(r[f]) for f in fs]
+                    average_mic = np.mean(mics)
+
+                    # check
+                    for m in mics:
+                        if pd.isna(m): raise ValueError("nan in mics")
+                        #if m>(average_mic*3) or m<(average_mic/3): print("WARNING: outlayer MIC %s from %s. %s. %s"%(m, mics, fs, r.Strain))
+
+                    return average_mic
+
+                df[mic_f] = df.apply(get_average_mic, axis=1)
+                mic_fs.append(mic_f)
+
+            # keep interesting strains
+            def modify_strain(x):
+                strain_to_real_strain = {"19-4":"19-4"}
+                if len(x)==5: return "%i%i-%i%i"%(int(x[0]), int(x[1]), int(x[3]), int(x[4]))
+                elif x in strain_to_real_strain: return strain_to_real_strain[x]
+                else: raise ValueError("invaid x:%s"%x)
+
+            df_BioSample["SampleName"] = df_BioSample.strain.apply(modify_strain)
+            df["SampleName"] = df.Strain.apply(modify_strain)
+
+            all_strains = set(df.SampleName)
+            df_BioSample = df_BioSample[df_BioSample.SampleName.isin(all_strains)]
+
+            missing_strains = all_strains.difference(set(df_BioSample.SampleName))
+            if len(missing_strains)>0: raise ValueError("There are some samples in df not in biosample: %s"%missing_strains)
+            df = df[["SampleName"] + mic_fs].merge(df_BioSample[["SampleName", "Run"]], on="SampleName", how="left", validate="one_to_one")
+
+        elif bioproject=="PRJNA737309":
+
+            # In Vitro Antifungal Resistance of Candida auris Isolates from Bloodstream Infections, South Africa. Maphanga 2021
+
+            # load table S2 (various resistances)
+            df = pd.read_excel("%s/Maphanga2021_TableS2.xlsx"%ManualData_dir)[["sampleID", "ANI_MIC", "MIF_MIC", "AMB_MIC"]]
+            df["sampleID"] = df.sampleID.apply(str)
+
+            # add the FLC resistance from S1
+            df_S1_lines = pd.DataFrame({"line":list(map(lambda l: l.strip(), open("%s/Maphanga2021_TableS1.txt"%ManualData_dir, "r").readlines()))})
+            df_S1_lines["first_cell"] = df_S1_lines.line.apply(lambda x: x.split()[0])
+            df_S1_lines["all_cells"] = df_S1_lines.line.apply(lambda x: x.split())
+
+            def get_flc_mic_from_s1(s):
+
+                # predefined due to inconsistencies
+                sID_to_mic_str = {"3345":"8", "6277":"8", "3758":"4"}
+                if s in sID_to_mic_str: mic_str = sID_to_mic_str[s]
+
+                # perfect match
+                elif sum(df_S1_lines.first_cell==s)==1: mic_str = df_S1_lines[df_S1_lines.first_cell==s].iloc[0].all_cells[-1]
+
+                # split
+                elif "_" in s: 
+
+                    df_S1_lines_s = df_S1_lines[df_S1_lines.first_cell.isin({s.split("_")[0], "_"+s.split("_")[1]})]
+                    if len(df_S1_lines_s)!=2 or len(df_S1_lines_s.iloc[0].all_cells)!=1 or len(df_S1_lines_s.iloc[1].all_cells)!=3: raise ValueError("invalid df: %s"%df_S1_lines_s)
+
+                    mic_str = df_S1_lines_s.iloc[1].all_cells[-1]
+
+                # other situations
+                else: raise ValueError("invalid %s"%s)
+
+                # return
+                if float(mic_str)!=int(mic_str): raise ValueError("mic should be an int")
+                return int(mic_str)
+
+            df["FLC_MIC"] = df.sampleID.apply(get_flc_mic_from_s1).apply(float)
+
+            # merge
+            df_BioSample["SampleName"] = df_BioSample.LibraryName.apply(str)
+            df["SampleName"] = df.sampleID
+
+            # define overlapping samples
+            samples_in_SRA = set(df_BioSample.SampleName)
+            samples_in_df = set(df.SampleName)
+            #print("samples in SRA Not in df:\n%s"%("\n".join(sorted(samples_in_SRA.difference(samples_in_df)))))
+            #print("\n\nsamples in df not in SRA:\n%s"%("\n".join(sorted(samples_in_df.difference(samples_in_SRA)))))
+            # I checked that SampleName and strain are the same as LibraryName
+            shared_samples = samples_in_SRA.intersection(samples_in_df)
+
+            # merge
+            df = df[df.SampleName.isin(shared_samples)]
+            df_BioSample = df_BioSample[df_BioSample.SampleName.isin(shared_samples)]
+
+            df = df[["SampleName", "FLC_MIC", "AMB_MIC", "MIF_MIC", "ANI_MIC"]].merge(df_BioSample[["SampleName", "Run"]], on="SampleName", how="left", validate="one_to_one")
+
+        elif bioproject=="PRJNA549344":
+
+            # Genomic epidemiology of Candida auris in a general hospital in Shenyang, China: a three-year surveillance study. Tian 2021
+
+            # Pacbio and illumina reads and assembly from this study were deposited at DDBJ/ENA/GenBank under BioProject PRJNA549344. Other sequencing read data that can be found in BioProjects are PRJNA267757, PRJNA328792, PRJEB20230, PRJNA415955, PRJNA470683, and PRJEB9463. I only parsed the clinical isolates, as there was one environmental one
+
+            # get isolate data 
+            df = pd.read_excel("%s/Tian2021_tableS1.xlsx"%ManualData_dir) # this lacks the info for the one environmental strain
+            df = df[["isolate", "Run"] + [f for f in df.keys() if f.endswith("_MIC")]].rename(columns={"isolate":"SampleName"})
+            mic_fs = [f for f in df.keys() if f.endswith("_MIC")]
+            for f in mic_fs: df[f] = df[f].apply(get_MIC_float)
+            df["SampleName"] = df.SampleName.apply(str).apply(lambda x: x.replace("*",""))
+
+            # check that all the SRR files are in the bioprojects
+            unexpected_runs = set(df.Run).difference(set(df_BioSample.Run))
+            if len(unexpected_runs)>0: raise ValueError("unexpected runs: %s"%unexpected_runs)
+            check_no_nans_series(df.Run)
+
+        elif bioproject=="PRJNA655187":
+
+            # Molecular Epidemiological Investigation of a Nosocomial Cluster of C. auris: Evidence of Recent Emergence in Italy and Ease of Transmission during the COVID-19 Pandemic. DiPilato 2021. The bioproject has a lot of strains, but in the paper they only describe 10 clinical isolates with FG_G1...10. They don't provide the MICs, but there are claims about resistance. 
+
+            # They say "all tested isolates were resistant to fluconazole, voriconazole, and amphotericin B. Conversely, lower MIC values were observed for the other tested antifungal drug". Our thresholds for resistance are fluconazole (16), voriconazole (1), and amphotericin B (1)
+
+            # For other drugs, Itraconazole(0.25), Posaconazole (0.06), Caspofungin (1), Anidulafungin (1), Micafungin (2), Flucytosine (0.5) we set 'susceptibility' in all samples, as all had MICs<=0.5*bp
+
+            # keep only some samples
+            interesting_samples = set(map(lambda x: "FG_GE%i"%x, range(1, 11)))
+            df_BioSample["SampleName"] = df_BioSample.strain
+            df = df_BioSample[df_BioSample.SampleName.isin(interesting_samples)][["SampleName", "Run"]]
+            if set(df.SampleName)!=interesting_samples: raise ValueError("not shared samples")
+
+            # define hard resistance values
+            for f in ["FLC_resistance", "VRC_resistance", "AMB_resistance"]: df[f] = "R"
+            for f in ["CAS_resistance", "ANI_resistance", "MIF_resistance"]: df[f] = "S"
+
+        else: raise ValueError("invalid bp: %s"%bioproject)
+
+
+        # add general data
+        df["BioProject"] = bioproject
+        df["paper_link"] = paper_link
+        df["species"] = "Candida_" + species_name
+
+        # check that all _MIC or _resistance fields are properly spelled in df
+        drugs_in_df = set([f.split("_")[0] for f in df.keys() if f.endswith("_MIC") or f.endswith("_resistance")])
+        strange_drugs = drugs_in_df.difference(set(sorted_drugs))
+        if len(strange_drugs)>0: raise ValueError("misspelled drugs: %s"%strange_drugs)
+
+        # add missing data
+        for f in metadata_cols:
+            if f not in set(df.keys()): 
+                if not (f.endswith("_MIC") or f.endswith("_resistance")): raise ValueError("field %s missing in %s"%(f, bioproject))
+                df[f] = np.nan
+
+            # check for no NaNs
+            else: 
+                excpetions_nans = {("PRJNA693430", "ANI_MIC"), ("PRJNA693430", "ITR_MIC"),  ("PRJNA693430", "POS_MIC")}
+                if (bioproject, f) not in excpetions_nans: check_no_nans_series(df[f])
+
+        # add
+        df_metadata_all = df_metadata_all.append(df[metadata_cols]).reset_index(drop=True)
+        #print(", ".join(["%s: %i strains"%(s, sum(df_metadata_all.species==s)) for s in ["Candida_glabrata", "Candida_auris"]]))
+
+    # add the R/I/S for all strains where it is possible
+    print("adding the drug resistance data")
+
+    # redefine drugs
+    sorted_drugs = ['5FC', 'AMB', 'ANI', 'CAS', 'FLC', 'ITR', 'IVZ', 'MIF', 'POS', 'VRC']
+
+    # define the breakpoints
+    species_to_drug_to_breakpoint = get_species_to_drug_to_breakpoint(ManualData_dir, sorted_drugs)
+
+    # get the resistanced
+    for d in sorted_drugs:  
+
+        # define field
+        resistance_f = "%s_resistance"%d
+        if not resistance_f in df_metadata_all.keys(): raise ValueError("field should exist")
+
+        # add
+        df_metadata_all[resistance_f] = df_metadata_all.apply(get_SIR_resistance_drug_one_sample, drug=d, species_to_drug_to_breakpoint=species_to_drug_to_breakpoint, axis=1)
+
+        # check
+        strange_rs = set(df_metadata_all[~pd.isna(df_metadata_all[resistance_f])][resistance_f]).difference({"S", "I", "R"})
+        if len(strange_rs)>0: raise ValueError("strangers: %s"%strange_rs)
+
+    # print stats
+    """
+    for species in sorted(set(df_metadata_all.species)): 
+        print()
+        for d in sorted_drugs: print("%s-%s. %s strains"%(species, d, "/".join(["%i%s"%(sum((df_metadata_all.species==species) & (df_metadata_all["%s_resistance"%d]==x)), x) for x in ["S", "I", "R"]])))
+    """
+    
+    return df_metadata_all
+
+
+def get_cov_dict_one_srr(srr, outdir, window_s):
+
+    """Gets coverage df for one srr"""
+
+    print("getting coverage for %s"%srr)
+
+    # load df
+    df_coverage = get_tab_as_df_or_empty_df("%s/coverage_windows_%ibp.tab"%(outdir, window_s))
+    check_no_nans_in_df(df_coverage[["mediancov_1", "percentcovered_1"]])
+
+    # return things
+    return {"srr":srr,  "mean_coverage":np.mean(df_coverage.mediancov_1), "pct_covered":np.mean(df_coverage.percentcovered_1)}
+
+
+def get_df_coverage_per_run_gwas_validation(srr_to_alignReadsDir, species, filename, threads):
+
+    """Get coverage per run"""
+
+    if file_is_empty(filename):
+        print("Getting coverage df")
+
+        # run in parallel
+        with multiproc.Pool(threads) as pool:
+
+            window_s = {"Candida_auris":41607, "Candida_glabrata":47983}[species]
+            df_coverage = pd.DataFrame(pool.starmap(get_cov_dict_one_srr, [(srr, srr_to_alignReadsDir[srr], window_s) for srr in sorted(set(srr_to_alignReadsDir))]))
+            pool.close()
+            pool.terminate()
+
+        # save
+        save_df_as_tab(df_coverage, filename)
+
+    return get_tab_as_df_or_empty_df(filename)
+
+
+def generate_merged_vcf_from_tab_variant_files(vcf_file, list_var_files):
+
+    """Generates merged variant files"""
+
+    if file_is_empty(vcf_file):
+        print("Getting merged vcf file...")
+
+        # load vars df and keep some fields
+        print("loading df")
+        df_vars = pd.concat([get_tab_as_df_or_empty_df(f) for f in list_var_files]).rename(columns={"#Uploaded_variation":"ID"})
+
+        # keep vcf fields
+        vcf_fields = ["#CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT", "DATA"]
+        df_vars["DATA"] = "."
+        df_vars["FORMAT"] = "."
+        df_vars["INFO"] = "."
+        df_vars["FILTER"] = "."
+        df_vars = df_vars[vcf_fields].drop_duplicates(subset=["#CHROM", "POS", "REF", "ALT", "ID"], keep="first")
+
+        # write vcf
+        print("writing vcf")
+        vcf_file_tmp = "%s.tmp"%vcf_file
+        vcf_lines = df_vars[vcf_fields].to_csv(sep="\t", header=False, index=False)
+        header_lines = "\n".join(["##fileformat=VCFv4.2", "\t".join(vcf_fields)])
+        open(vcf_file_tmp, "w").write(header_lines + "\n" + vcf_lines)
+        os.rename(vcf_file_tmp, vcf_file)
+
+
+def get_GWAS_cmds_one_drug_validation_genes(outdir_drug, drug, df_metadata_validation, reference_genome, df_gwas_hits_previous, ploidy, srr_to_varcallDir, min_coverage_pos, variant_calling_srrs, species, gff, threads, species_dir, df_interpro, gene_features_df):
+
+    """Gets the GWAS commands for one drug. This is for the validation of GWAS results. The cmds should be name_job, cmd, env, threads. Only for hits previously defined (only genes). Similar to get_cmds_ancestral_GWAS_drugResistance, but only on a subset of genes."""
+
+    # keep
+
+    # init the cmds that will be returned
+    all_cmds = []
+
+    # define the final file
+    gwas_results_df_file = "%s/gwas_results_df_all.py"%outdir_drug
+    if file_is_empty(gwas_results_df_file):
+        print("Getting cmds for %s..."%drug)
+
+        #### WRITE RESISTANCE ####
+
+        # keep df_metadata_validation with interesting samples
+        df_metadata_validation = cp.deepcopy(df_metadata_validation)
+        df_metadata_validation = df_metadata_validation[(df_metadata_validation["%s_resistance"%drug].isin({"R", "S"})) &(df_metadata_validation.Run.isin(variant_calling_srrs))].rename(columns={"Run":"sampleID"})
+
+        # map each sample to the resistance
+        df_metadata_validation["phenotype"] = df_metadata_validation["%s_resistance"%drug].map({"R":1, "S":0})
+        check_no_nans_series(df_metadata_validation["phenotype"])
+        sample_to_resistance = dict(df_metadata_validation.set_index("sampleID").phenotype)
+
+        # get the resistance file
+        sorted_samples = sorted(set(df_metadata_validation.sampleID))
+        resistance_file = "%s/resistance_df.tab"%outdir_drug
+        save_df_as_tab(df_metadata_validation[["sampleID", "phenotype"]].set_index("sampleID", drop=False).loc[sorted_samples], resistance_file)
+
+        ##########################
+
+        ##### DEFINE TREE ####
+
+        # get tree
+        outdir_tree = "%s/tree_generation"%outdir_drug; make_folder(outdir_tree)
+        if file_is_empty("%s/tree_generated.txt"%outdir_tree):
+
+            # prepare inputs
+            if ploidy==1: paths_df = pd.DataFrame({sID : {"sampleID":sID, "sorted_bam":"%s/align_reads/aligned_reads.bam.sorted"%(srr_to_varcallDir[sID]), "haploid_vcf":"%s/general_varcall/call_small_variants/variants_atLeast2PASS_ploidy1.vcf"%(srr_to_varcallDir[sID]), "diploid_vcf":"%s/small_var_call_p2/variants_atLeast2PASS_ploidy2.vcf"%(srr_to_varcallDir[sID])} for sID in sorted(set(df_metadata_validation.Run))}).transpose().reset_index(drop=True)
+
+            else: raise ValueError("p=2 not considered")
+            paths_table = "%s/paths_samples.tab"%outdir_tree
+            save_df_as_tab(paths_df, paths_table)
+
+            # get cmd
+            threads_tree = 12
+            tree_cmd = "%s/scripts/tree_from_SNPs/scripts/get_tree.py --paths_table %s -o %s --mode haploid --threads %i --min_coverage_pos %i"%(ParentDir, paths_table, outdir_tree, threads_tree, min_coverage_pos)
+            all_cmds.append(("tree_gen", tree_cmd, "tree_from_SNPs_env", threads_tree))
+            return all_cmds
+
+        # modify tree to have support in roots
+        tree = Tree("%s/rooted_tree_mode=haploid_min_cov=%i.nw"%(outdir_tree, min_coverage_pos))
+        tree.support = 100
+        for n in tree.get_children():
+            if not n.is_leaf(): n.support = 100
+
+        # check and write
+        treefile_rooted = "%s/rooted_tree_mod.nw"%outdir_tree
+        check_that_tree_has_no_politomies(tree)
+        tree.write(outfile=treefile_rooted, format=2)
+
+        # make a tree with the preserved samples (considering a branch support of 70)
+        plot_tree_AF_resistance_samples_for_GWAS(tree, sample_to_resistance, outdir_drug, 70, species, drug)
+
+        ######################
+
+        ##### GET ASR FILES FOR ALL MUTATIONS #######
+        print("getting ASR for mutations")
+
+        # define the interesting genes, those previously defined as GWAS hits
+        df_gwas_hits_previous = cp.deepcopy(df_gwas_hits_previous)
+        df_gwas_hits_previous["geneID"] = df_gwas_hits_previous.apply(get_geneID_gwas_hit, axis=1)
+        interesting_geneIDs = set(df_gwas_hits_previous["geneID"])
+
+        # check that genes make sense
+        strage_genes = interesting_geneIDs.difference(set(gene_features_df.gff_upmost_parent))
+        if len(strage_genes)>0: raise ValueError("strage_genes: %s"%strage_genes)
+
+        # get the variants, only those from a subset of genes
+        variants_df_all, annot_df_all, variants_df_all_file = get_vars_df_only_subset_samples_for_GWAS_simplified(species_dir, set(sorted_samples), outdir_drug, ploidy, False, gff, threads, species, reference_genome, interesting_geneIDs=interesting_geneIDs, sampleID_is_int=False)
+
+        # keep some fields
+        print("loading variants")
+        variants_df_all = variants_df_all[["variantID_across_samples", "sampleID"]]
+
+        # get the ASR for each mutation with all the methods possible
+        get_ASR_mutations_py = "%s/scripts/ancestral_GWAS/scripts/get_ASR_mutations.py"%ParentDir
+        outdir_ASR_mutations = "%s/ASR_mutations"%outdir_drug
+        resampled_phenotypes_pastml_out = "%s/resampled_phenotypes_pastml_df.py"%outdir_drug
+        final_file_ASR_mutations = "%s/all_jobs_finished.txt"%outdir_ASR_mutations
+
+        # clean to debug
+        #delete_folder(outdir_ASR_mutations)
+        #delete_folder("%s.generating_tmp"%resampled_phenotypes_pastml_out)
+        if file_is_empty(final_file_ASR_mutations):
+
+            # keep the cmd
+            threads_ASR = 48
+            cmd = "%s --variants_table %s --tree %s --phenotypes %s --outdir %s --varID_field variantID_across_samples --pastml_prediction_method ALL --threads %i --resampled_phenotypes_pastml_out %s --phenotypes_pastml_prediction_method ALL --add_pseudocount_dist_internal_nodes"%(get_ASR_mutations_py, variants_df_all_file, treefile_rooted, resistance_file, outdir_ASR_mutations, threads_ASR, resampled_phenotypes_pastml_out)
+            all_cmds.append(("mut_asr", cmd, "ancestral_GWAS_env", threads_ASR))
+            return all_cmds
+
+        else: print("The ASR for all mutations was already performed")
+
+        ############################
+
+        ### DEFINE DOMAINS ####
+
+        # load domain annotations for all
+        print("load domain annotations")
+        domains_annot_df_all = get_domains_annotations_df(annot_df_all, outdir_drug, species, df_interpro, gff, gene_features_df)
+
+        # keep only interesting genes
+        missing_genes = interesting_geneIDs.difference(set(domains_annot_df_all.Gene))
+        if len(missing_genes)>0: print("WARNING: There are some genes that have no variants overlapping domains: %s"%missing_genes)
+        domains_annot_df_all = domains_annot_df_all[domains_annot_df_all.Gene.isin(interesting_geneIDs)]
+
+        # define variants that have some domain alteration
+        variants_with_domain_alteration = set(domains_annot_df_all.variantID_across_samples)
+
+        #######################
+
+
+        ##### GET GWAS CMDS ######
+
+        # define different iterables to subset data 
+        all_types_variants = {'coverageCNV', 'SV', 'SNP', 'INDEL'}
+
+        list_types_vars = [("all_vars", all_types_variants),
+                           ("small_vars", {'SNP', 'INDEL'}), 
+                           ("SVs", {'SV'}),
+                           ("coverageCNVs", {'coverageCNV'}),
+                           ("SVs_and_CNVs", {'coverageCNV', 'SV'}),
+                           ("small_vars_and_SVs", {'SV', 'SNP', 'INDEL'}),
+                           ("small_vars_and_CNVs", {'coverageCNV', 'SNP', 'INDEL'})]
+
+        nonSyn_types_mutations = {"non_syn_muts", "non_syn_non_truncating_muts", "truncating_muts"}
+        nonSyn_types_mutations_and_all = {"non_syn_muts", "non_syn_non_truncating_muts", "truncating_muts", "all_muts"}
+
+        # prepare the inputs of the cmds (only vars, genes, domains and nonsyn vars)
+        print("preparing cmds for get_cmd_ancestral_GWAS_drugResistance_specificMutations_and_grouping_runningFunction...")
+
+        inputs_fn_integration = []
+        inputs_fn = [] 
+        Igroup = 1
+        threads_ancestral_GWAS = 8
+
+        for type_vars, type_vars_set in list_types_vars:
+            for type_genes in ["all_genes", "only_protein_coding"]:
+                for type_mutations in ["all_muts", "non_syn_muts", "non_syn_non_truncating_muts", "truncating_muts"]:
+                    for type_collapsing in ["none", "genes", "domains"]:
+                        
+                        # without collapsing, you just need the all genes
+                        if type_collapsing=="none" and (type_vars!="all_vars" or type_genes!="all_genes" or type_mutations!="all_muts"): continue
+
+                        # for genes run all genes together for different combinations of mutations (only the non synonymous and all ones)
+                        if type_collapsing=="genes" and (type_genes!="all_genes" or type_mutations not in nonSyn_types_mutations_and_all): continue
+
+                        # for domains and pathways only consider protein altering mutations
+                        if type_collapsing=="domains" and (type_genes!="only_protein_coding" or type_mutations not in nonSyn_types_mutations): continue
+
+                        # log
+                        #print(species, drug, type_vars, type_genes, type_mutations, type_collapsing)
+
+                        # define the outdir gwas
+                        outdir_gwas_all = "%s/%s-%s-%s-%s"%(outdir_drug, type_vars, type_genes, type_mutations, type_collapsing)
+                        # if type_collapsing=="none": delete_folder(outdir_gwas_all) # debug
+                        make_folder(outdir_gwas_all)
+
+                        # get the grouping_df_file
+                        if type_collapsing=="none": grouping_df_file = ""
+                        else: 
+
+                            # get the file
+                            grouping_df_file = get_grouping_df_file(outdir_gwas_all, annot_df_all, type_vars_set, type_genes, type_mutations, type_collapsing, variants_with_domain_alteration, None, None, None, domains_annot_df_all, None, None, None)
+
+                            # skip if the len is 0
+                            if (os.path.getsize(grouping_df_file))<2000 and len(load_object(grouping_df_file))==0: 
+                                delete_folder(outdir_gwas_all)
+                                continue
+
+                        # iterate through different methods of the phenotypes reconstruction,
+                        for ASR_methods in ["MPPA", "MPPA,DOWNPASS", "DOWNPASS"]:
+
+                            # define the same method to ASR mutations
+                            ASR_methods_mutations = ASR_methods_phenotypes = ASR_methods
+
+                            # iterate through several min_support
+                            for min_support in [50, 70]:
+     
+                                # define the outdirs
+                                outdir_gwas = "%s/%s-%s-min_support=%i"%(outdir_gwas_all, ASR_methods_phenotypes, ASR_methods_mutations, min_support)
+                                make_folder(outdir_gwas)
+                                outdir_GWAS_jobs = "%s/gwas_jobs"%outdir_gwas
+                                make_folder(outdir_GWAS_jobs)
+
+                                # get the cmd
+                                inputs_fn.append([outdir_gwas, type_collapsing, resistance_file, threads_ancestral_GWAS, outdir_ASR_mutations, ASR_methods_mutations, ASR_methods_phenotypes, min_support, outdir_GWAS_jobs, grouping_df_file, resampled_phenotypes_pastml_out, Igroup]) # using half of the threads to have more memory
+                                
+                                # get the inputs for the integration
+                                inputs_fn_integration.append([outdir_GWAS_jobs, type_collapsing, Igroup, type_vars, type_genes, type_mutations, ASR_methods_phenotypes, ASR_methods_mutations, min_support])
+
+                                # update group
+                                Igroup += 1
+
+        # add the number of jobs
+        njobs = len(inputs_fn)
+        inputs_fn = list(map(lambda x: tuple(x + [njobs]), inputs_fn))
+        inputs_fn_integration = list(map(lambda x: tuple(x + [njobs]), inputs_fn_integration))
+
+        # run jobs in parallel
+        print("Running GWAS jobs in %i threads"%threads) # maybe change to 24
+        with multiproc.Pool(threads) as pool:
+            all_cmds_drug = pool.starmap(get_cmd_ancestral_GWAS_drugResistance_specificMutations_and_grouping_runningFunction, inputs_fn, chunksize=1)
+            pool.close()
+            pool.terminate()
+
+        # get the cmds as a single list
+        all_cmds_drug = [cmd for cmd in all_cmds_drug if cmd is not None]
+        print("\n\n\n-------------------\nThere are %i jobs in %s\n-----------------\n\n\n"%(len(all_cmds_drug), drug))
+
+        if len(all_cmds_drug)>0: 
+            all_cmds += [("ancestral_GWAS", cmd, "ancestral_GWAS_env", threads_ancestral_GWAS) for cmd in all_cmds_drug]
+            return all_cmds
+
+        ##########################
+
+
+        ######## INTEGRATE GWAS RESULTS #######
+
+        # run the integration in parallel
+        print("Integrating GWAS jobs in %i threads for %s-%s"%(threads, species, drug))
+        with multiproc.Pool(threads) as pool:
+            gwas_results_df = pd.concat(pool.starmap(run_integrate_GWAS_jobs_one_combination_get_df, inputs_fn_integration, chunksize=1))
+            pool.close()
+            pool.terminate()
+
+        if len(gwas_results_df)==0: print("WARNING: for %s-%s there are no gwas results"%(species, drug))
+
+        # add fields to the df
+        print("adding fields and keeping gwas_results_df")
+        gwas_results_df["drug"] = drug
+        gwas_results_df["species"] = species
+
+        # check that the combinations are unique
+        print("checking")
+        if len(gwas_results_df)!=len(gwas_results_df.drop_duplicates(subset=["species", "drug", "type_vars", "type_genes", "type_mutations", "type_collapsing", "ASR_methods_phenotypes", "ASR_methods_mutations", "gwas_method", "min_support", "group_name"])): raise ValueError("The unique_ID_gwas is not unique")
+
+        # save
+        print("saving")
+        save_object(gwas_results_df, gwas_results_df_file)
+
+        # remove the mutations. Now I leave like this for future runs.
+        """
+        print("cleaning mutations")
+        delete_folder(outdir_ASR_mutations)
+        """
+
+        #######################################
+
+    return all_cmds
+
+def plot_gwas_validation_scatterplots(df_gwas_validation_all, ProcessedDataDir, hit_criteria, gwas_table_df_genes, gwas_results_df_more_than_1_spp_OGs_genes, PlotsDir):
+
+    """Plots the gwas validation scatterplots"""
+
+    ######### CREATE DATASET ########
+
+    # define all datasets
+    df_gwas_validation_all = cp.deepcopy(df_gwas_validation_all)
+    df_gwas_validation_all["species_and_drug"] = df_gwas_validation_all.species + "-" + df_gwas_validation_all.drug
+    all_spp_drug = sorted(set(df_gwas_validation_all.species_and_drug))
+
+    df_best_hits_file = "%s/df_gwas_validation_one_hit_per_HC_gene_criteria_%s.py"%(ProcessedDataDir, hit_criteria)
+    if file_is_empty(df_best_hits_file):
+
+        # keep dfs
+        gwas_table_df_genes = cp.deepcopy(gwas_table_df_genes)
+        gwas_results_df_more_than_1_spp_OGs_genes = cp.deepcopy(gwas_results_df_more_than_1_spp_OGs_genes)
+
+        # add specificity levels
+        type_vars_to_level_specificity = {"all_vars": 3, "SVs_and_CNVs":2, "small_vars_and_SVs":2, "small_vars_and_CNVs":2, "small_vars":1, "SVs":1, "coverageCNVs":1}
+        gwas_table_df_genes["type_vars_level_spec"] = gwas_table_df_genes.type_vars.map(type_vars_to_level_specificity); 
+        check_no_nans_series(gwas_table_df_genes.type_vars_level_spec)
+
+        df_gwas_validation_all["type_vars_level_spec"] = df_gwas_validation_all.type_vars.map(type_vars_to_level_specificity); 
+        check_no_nans_series(df_gwas_validation_all.type_vars_level_spec)
+        df_gwas_validation_all["ASR_methods_phenotypes_level"] = df_gwas_validation_all.ASR_methods_phenotypes.apply(lambda x: {"MPPA":1, "DOWNPASS":2, "MPPA,DOWNPASS":3}[x])
+
+        type_collapsing_to_level_specificity = {"genes":3, "domains":2, "none":1}
+        df_gwas_validation_all["type_collapsing_level_spec"] = df_gwas_validation_all.type_collapsing.apply(lambda x: type_collapsing_to_level_specificity[x])
+
+
+        type_mutations_to_level_specificity = {"all_muts": 3, "syn_muts": 2, "non_syn_muts": 2, "non_syn_non_truncating_muts": 1.5, "truncating_muts": 1}
+        df_gwas_validation_all["type_mutations_level_spec"] = df_gwas_validation_all.type_mutations.apply(lambda x: type_mutations_to_level_specificity[x])
+
+
+
+        # keep some fields
+        df_gwas_validation_all = df_gwas_validation_all[["species_and_drug", "type_vars", "type_mutations", "type_collapsing", "group_name", "affected_genes_set", "min_support", "ASR_methods_phenotypes", "pval_chi_square_phenotypes", "pval_GenoAndPheno_phenotypes", "epsilon", "type_vars_level_spec", "ASR_methods_phenotypes_level", "type_collapsing_level_spec", "type_mutations_level_spec"]].set_index("species_and_drug", drop=False)
+
+        # map each species and drug to the genes that are in >1 dataset
+        spp_drug_to_geneIDs_more_than_1_dataset = dict(gwas_results_df_more_than_1_spp_OGs_genes.groupby("species_and_drug").apply(lambda df_s: set(df_s.geneID)))
+
+        # create a df where, for each gene in the original GWAS df, you get information for one hit
+        def get_hit_gwas_validation_one_spp_drug_gene(df):
+
+            # parse
+            species_and_drug, geneID = df.name
+
+            # in cases with >1 hit, keep the strongest one
+            if len(df)>1:
+                print("There is a df with >1 hit in %s, %s. %s. Keeping strongest hits..."%(species_and_drug, geneID, ", ".join(df.group_name)))
+                df = get_df_with_sorted_values_as_first_r(df, ["pval_chi_square_phenotypes", "pval_GenoAndPheno_phenotypes", "epsilon", "min_support", "type_vars_level_spec"], [True, True, False, False, True])
+
+            if len(df)!=1: 
+                print_df_keys(df)
+                raise ValueError("df should have only one hit")
+
+            hit_r = df.iloc[0]
+
+            # get the gwas validation for this species_drug
+            df_gwas_validation = df_gwas_validation_all.loc[{species_and_drug}]
+
+            # init dict
+            dict_data = {"geneID":geneID, "species_and_drug":species_and_drug, "type_collapsing_original_GWAS":hit_r.type_collapsing}
+
+            # add whether it is a gene belonging to the all genes or >1 spp
+            if species_and_drug in spp_drug_to_geneIDs_more_than_1_dataset and geneID in spp_drug_to_geneIDs_more_than_1_dataset[species_and_drug]: dict_data["type_gene"] = ">1 GWAS dataset"
+            else: dict_data["type_gene"] = "1 GWAS dataset"
+
+            # get the matching hit in the confirmation gwas
+            if hit_criteria=="same grouping": df_gwas_validation_hit = df_gwas_validation[df_gwas_validation.apply(lambda r: all([r[k]==hit_r[k] for k in ["type_vars", "type_mutations", "type_collapsing", "group_name", "min_support", "ASR_methods_phenotypes"]]), axis=1)]
+
+            elif hit_criteria=="best gene hit":
+
+                df_gwas_validation_gene = df_gwas_validation[df_gwas_validation.affected_genes_set.apply(lambda gs: geneID in gs)]
+                if len(df_gwas_validation_gene)==0: df_gwas_validation_hit = df_gwas_validation_gene
+                else: df_gwas_validation_hit = get_df_with_sorted_values_as_first_r(df_gwas_validation_gene, ["pval_chi_square_phenotypes", "pval_GenoAndPheno_phenotypes", "epsilon", "min_support", "type_collapsing_level_spec", "type_mutations_level_spec", "type_vars_level_spec", "ASR_methods_phenotypes_level", "group_name"], [True, True, False, False, True, True, True, True, True])
+
+            else: raise ValueError("invalid hit criteria")
+
+            # add intersing fields to dict_data
+            interesting_fields_dict_data = ["pval_chi_square_phenotypes", "pval_GenoAndPheno_phenotypes", "epsilon"]
+
+            if len(df_gwas_validation_hit)==0: 
+                for f in interesting_fields_dict_data: dict_data[f] = -1
+
+            elif len(df_gwas_validation_hit)==1:
+                for f in interesting_fields_dict_data: dict_data[f] = df_gwas_validation_hit.iloc[0][f]
+
+            else: 
+                print_df_keys(df_gwas_validation_hit)
+                raise ValueError("df_gwas_validation_hit should have 0 or 1 len")
+
+            return pd.Series(dict_data)
+
+        df_best_hits = gwas_table_df_genes[gwas_table_df_genes.species_and_drug.isin(set(all_spp_drug))].groupby(["species_and_drug", "geneID"]).apply(get_hit_gwas_validation_one_spp_drug_gene).reset_index(drop=True)
+        check_no_nans_in_df(df_best_hits)
+
+        print("saving")
+        save_object(df_best_hits, df_best_hits_file)
+
+    df_best_hits = load_object(df_best_hits_file)
+
+
+
+    ################################
+
+    ##### FIGURE ####
+
+    nrows = 2
+    ncols = len(all_spp_drug)
+    fig = plt.figure(figsize=(ncols*2.5, nrows*2.5))
+    Ip = 1
+
+    # define the minimum pval of all
+    min_pval = min([min(df_best_hits[df_best_hits.epsilon!=-1][pval_f]) for pval_f in ["pval_chi_square_phenotypes", "pval_GenoAndPheno_phenotypes"]])
+
+    # get the figure
+    for Ir, pval_f in enumerate(["pval_chi_square_phenotypes", "pval_GenoAndPheno_phenotypes"]):
+
+        # define the -log10 p
+        pval_pseudocount = 1e-5
+        def get_minus_log10pval(x):
+            if x==-1: return -1
+            else:  return -np.log10(x + pval_pseudocount) # pseudocount
+        minus_log10pval_f = "minus_log_%s"%pval_f
+        df_best_hits[minus_log10pval_f] = df_best_hits[pval_f].apply(get_minus_log10pval)
+
+        for Ic, spp_drug in enumerate(all_spp_drug):
+            ax = plt.subplot(nrows, ncols, Ip); Ip+=1
+
+            # define the 
+
+            # get df
+            df_p_all = df_best_hits[(df_best_hits.species_and_drug==spp_drug)]
+            df_p = df_p_all[df_p_all.epsilon!=-1]
+            palette_tg = {">1 GWAS dataset":"red", "1 GWAS dataset":"gray"}
+            ax = sns.scatterplot(data=df_p, x="epsilon", y=minus_log10pval_f, hue="type_gene", style="type_collapsing_original_GWAS", palette=palette_tg, markers={"domains":"o", "genes":"v", "none":"X"}, edgecolor="black", linewidth=.4)#, markeredgewidth=.4)
+
+            # add line for p=0.05
+            for y in [0.1, 0.05]: ax.axhline(get_minus_log10pval(y), linewidth=.7, color="black", linestyle="--")
+
+            # customize legend
+            if Ir==0 and Ic==(ncols-1): ax.legend(loc='upper left', bbox_to_anchor=(1.05, 0.5))
+            elif not ax.get_legend() is None: ax.get_legend().remove()
+
+            # define axes
+            if Ic==0: ax.set_ylabel({"pval_chi_square_phenotypes":"$-log\ p(X^2)$", "pval_GenoAndPheno_phenotypes":"$-log\ p(n_{Gt,Ph})$"}[pval_f])
+            else: 
+                ax.set_ylabel("")
+                ax.set_yticklabels([])
+
+            if Ir==1 and Ic==2: ax.set_xlabel("convergence level ($\epsilon$)")
+            else: ax.set_xlabel("")
+
+            if Ir==0: ax.set_xticklabels([])
+
+            # define title
+            spp_drug_short = "C. %s-%s"%(spp_drug.split("-")[0].split("_")[1], spp_drug.split("-")[1])
+
+            ntransitions_set = set(df_gwas_validation_all[(df_gwas_validation_all.min_support==70) & (df_gwas_validation_all.ASR_methods_phenotypes=="MPPA,DOWNPASS") & (df_gwas_validation_all.species_and_drug==spp_drug)].nodes_withPheno)
+            backbone_title = "%s\n(%i R<>S transitions)"%(spp_drug_short, next(iter(ntransitions_set)))
+
+            if Ir==0 and Ic!=2: ax.set_title(backbone_title, fontsize=10)
+            elif Ir==0 and Ic==2: ax.set_title("Validation of high-confidence GWAS hits (considering %s)\n%s"%(hit_criteria, backbone_title), fontsize=10)
+
+
+            # limits
+            lims_x = [0, max(df_best_hits.epsilon) + 0.1]; ax.set_xlim(lims_x)
+            lims_y = [0, get_minus_log10pval(min_pval) + 0.5]; ax.set_ylim(lims_y)
+
+            # add numbers of genes with hits
+            for ypos, tg in [(0.5, "1 GWAS dataset"), (0.1, ">1 GWAS dataset")]:
+
+                df = df_p_all[df_p_all.type_gene==tg]
+
+                label = "%i/%i"%(sum(df.epsilon!=-1), len(df))
+                ax.text(0.83, ypos, label, color= palette_tg[tg], horizontalalignment='right', fontsize=10)
+
+
+
+
+          
+
+
+    plt.subplots_adjust(wspace=0.05,  hspace=0.05)
+    plt.show()
+    fig.savefig("%s/gwas_validation_scatter_%s.pdf"%(PlotsDir, hit_criteria), bbox_inches="tight")
+
+
+    #################
+
+
+def plot_gwas_validation_scatterplots_one_pval(df_gwas_validation_all, ProcessedDataDir, hit_criteria, gwas_table_df_genes, gwas_results_df_more_than_1_spp_OGs_genes, PlotsDir, gene_features_df):
+
+    """Plots the gwas validation scatterplots"""
+
+    ######### CREATE DATASET ########
+
+    # define all datasets
+    df_gwas_validation_all = cp.deepcopy(df_gwas_validation_all)
+    df_gwas_validation_all["species_and_drug"] = df_gwas_validation_all.species + "-" + df_gwas_validation_all.drug
+    all_spp_drug = sorted(set(df_gwas_validation_all.species_and_drug))
+
+    df_best_hits_file = "%s/df_gwas_validation_one_hit_per_HC_gene_criteria_%s.py"%(ProcessedDataDir, hit_criteria)
+    if file_is_empty(df_best_hits_file):
+
+        # keep dfs
+        gwas_table_df_genes = cp.deepcopy(gwas_table_df_genes)
+        gwas_results_df_more_than_1_spp_OGs_genes = cp.deepcopy(gwas_results_df_more_than_1_spp_OGs_genes)
+
+        # add specificity levels
+        type_vars_to_level_specificity = {"all_vars": 3, "SVs_and_CNVs":2, "small_vars_and_SVs":2, "small_vars_and_CNVs":2, "small_vars":1, "SVs":1, "coverageCNVs":1}
+        gwas_table_df_genes["type_vars_level_spec"] = gwas_table_df_genes.type_vars.map(type_vars_to_level_specificity); 
+        check_no_nans_series(gwas_table_df_genes.type_vars_level_spec)
+
+        df_gwas_validation_all["type_vars_level_spec"] = df_gwas_validation_all.type_vars.map(type_vars_to_level_specificity); 
+        check_no_nans_series(df_gwas_validation_all.type_vars_level_spec)
+        df_gwas_validation_all["ASR_methods_phenotypes_level"] = df_gwas_validation_all.ASR_methods_phenotypes.apply(lambda x: {"MPPA":1, "DOWNPASS":2, "MPPA,DOWNPASS":3}[x])
+
+        type_collapsing_to_level_specificity = {"genes":3, "domains":2, "none":1}
+        df_gwas_validation_all["type_collapsing_level_spec"] = df_gwas_validation_all.type_collapsing.apply(lambda x: type_collapsing_to_level_specificity[x])
+
+
+        type_mutations_to_level_specificity = {"all_muts": 3, "syn_muts": 2, "non_syn_muts": 2, "non_syn_non_truncating_muts": 1.5, "truncating_muts": 1}
+        df_gwas_validation_all["type_mutations_level_spec"] = df_gwas_validation_all.type_mutations.apply(lambda x: type_mutations_to_level_specificity[x])
+
+
+
+        # keep some fields
+        df_gwas_validation_all = df_gwas_validation_all[["species_and_drug", "type_vars", "type_mutations", "type_collapsing", "group_name", "affected_genes_set", "min_support", "ASR_methods_phenotypes", "pval_chi_square_phenotypes", "pval_GenoAndPheno_phenotypes", "epsilon", "type_vars_level_spec", "ASR_methods_phenotypes_level", "type_collapsing_level_spec", "type_mutations_level_spec"]].set_index("species_and_drug", drop=False)
+
+        # map each species and drug to the genes that are in >1 dataset
+        spp_drug_to_geneIDs_more_than_1_dataset = dict(gwas_results_df_more_than_1_spp_OGs_genes.groupby("species_and_drug").apply(lambda df_s: set(df_s.geneID)))
+
+        # create a df where, for each gene in the original GWAS df, you get information for one hit
+        def get_hit_gwas_validation_one_spp_drug_gene(df):
+
+            # parse
+            species_and_drug, geneID = df.name
+
+            # in cases with >1 hit, keep the strongest one
+            if len(df)>1:
+                print("There is a df with >1 hit in %s, %s. %s. Keeping strongest hits..."%(species_and_drug, geneID, ", ".join(df.group_name)))
+                df = get_df_with_sorted_values_as_first_r(df, ["pval_chi_square_phenotypes", "pval_GenoAndPheno_phenotypes", "epsilon", "min_support", "type_vars_level_spec"], [True, True, False, False, True])
+
+            if len(df)!=1: 
+                print_df_keys(df)
+                raise ValueError("df should have only one hit")
+
+            hit_r = df.iloc[0]
+
+            # get the gwas validation for this species_drug
+            df_gwas_validation = df_gwas_validation_all.loc[{species_and_drug}]
+
+            # init dict
+            dict_data = {"geneID":geneID, "species_and_drug":species_and_drug, "type_collapsing_original_GWAS":hit_r.type_collapsing}
+
+            # add whether it is a gene belonging to the all genes or >1 spp
+            if species_and_drug in spp_drug_to_geneIDs_more_than_1_dataset and geneID in spp_drug_to_geneIDs_more_than_1_dataset[species_and_drug]: dict_data["type_gene"] = ">1 GWAS dataset"
+            else: dict_data["type_gene"] = "1 GWAS dataset"
+
+            # get the matching hit in the confirmation gwas
+            if hit_criteria=="same grouping": df_gwas_validation_hit = df_gwas_validation[df_gwas_validation.apply(lambda r: all([r[k]==hit_r[k] for k in ["type_vars", "type_mutations", "type_collapsing", "group_name", "min_support", "ASR_methods_phenotypes"]]), axis=1)]
+
+            elif hit_criteria=="best gene hit":
+
+                df_gwas_validation_gene = df_gwas_validation[df_gwas_validation.affected_genes_set.apply(lambda gs: geneID in gs)]
+                if len(df_gwas_validation_gene)==0: df_gwas_validation_hit = df_gwas_validation_gene
+                else: df_gwas_validation_hit = get_df_with_sorted_values_as_first_r(df_gwas_validation_gene, ["pval_chi_square_phenotypes", "pval_GenoAndPheno_phenotypes", "epsilon", "min_support", "type_collapsing_level_spec", "type_mutations_level_spec", "type_vars_level_spec", "ASR_methods_phenotypes_level", "group_name"], [True, True, False, False, True, True, True, True, True])
+
+            else: raise ValueError("invalid hit criteria")
+
+            # add intersing fields to dict_data
+            interesting_fields_dict_data = ["pval_chi_square_phenotypes", "pval_GenoAndPheno_phenotypes", "epsilon"]
+
+            if len(df_gwas_validation_hit)==0: 
+                for f in interesting_fields_dict_data: dict_data[f] = -1
+
+            elif len(df_gwas_validation_hit)==1:
+                for f in interesting_fields_dict_data: dict_data[f] = df_gwas_validation_hit.iloc[0][f]
+
+            else: 
+                print_df_keys(df_gwas_validation_hit)
+                raise ValueError("df_gwas_validation_hit should have 0 or 1 len")
+
+            return pd.Series(dict_data)
+
+        df_best_hits = gwas_table_df_genes[gwas_table_df_genes.species_and_drug.isin(set(all_spp_drug))].groupby(["species_and_drug", "geneID"]).apply(get_hit_gwas_validation_one_spp_drug_gene).reset_index(drop=True)
+        check_no_nans_in_df(df_best_hits)
+
+        print("saving")
+        save_object(df_best_hits, df_best_hits_file)
+
+    df_best_hits = load_object(df_best_hits_file)
+
+    # definethe pval_f
+    pval_f = "pval_chi_square_phenotypes"
+
+    # general prints
+    for type_gene_set in [ {"1 GWAS dataset", ">1 GWAS dataset"}, {">1 GWAS dataset"}]: # {"1 GWAS dataset"}, 
+        for pval_tshd in [1, 0.1, 0.05]:
+
+            df_all = df_best_hits[(df_best_hits.type_gene.isin(type_gene_set))]
+            df_pval = df_all[(df_all.epsilon!=-1) & (df_all[pval_f]<pval_tshd)]
+
+            ngenes_p = len(set(df_pval.geneID))
+            ngenes_all =  len(set(df_all.geneID))
+
+            print("For type_gene=%s, there are %i/%i genes (%.2fpct) with p<%s"%(type_gene_set, ngenes_p, ngenes_all, (ngenes_p/ngenes_all)*100, pval_tshd))
+
+
+
+    ################################
+
+    ##### FIGURE ####
+
+    nrows = 2
+    ncols = 3
+    mult_size = 4
+    fig = plt.figure(figsize=(ncols*mult_size, nrows*mult_size))
+
+
+    # define the -log10 p
+    pval_pseudocount = 1e-5
+    def get_minus_log10pval(x):
+        if x==-1: return -1
+        else:  return -np.log10(x + pval_pseudocount) # pseudocount
+    minus_log10pval_f = "minus_log_%s"%pval_f
+    df_best_hits[minus_log10pval_f] = df_best_hits[pval_f].apply(get_minus_log10pval)
+
+
+    # get the figure
+    for Ip, spp_drug in enumerate(all_spp_drug):
+        print(spp_drug)
+        ax = plt.subplot(nrows, ncols, Ip+1)
+
+        # define the postion
+        Ir, Ic = {0:(0,0), 1:(0,1), 2:(0,2), 3:(1,0), 4:(1,1)}[Ip]
+
+        # get df
+        df_p_all = df_best_hits[(df_best_hits.species_and_drug==spp_drug)]
+        df_p = df_p_all[df_p_all.epsilon!=-1]
+        palette_tg = {">1 GWAS dataset":"red", "1 GWAS dataset":"gray"}
+        ax = sns.scatterplot(data=df_p, x="epsilon", y=minus_log10pval_f, hue="type_gene", style="type_collapsing_original_GWAS", palette=palette_tg, markers={"domains":"o", "genes":"v", "none":"X"}, edgecolor="black", linewidth=.4)#, markeredgewidth=.4)
+
+        # add gene names
+        geneID_to_name = dict(gene_features_df[gene_features_df.gff_upmost_parent.isin(set(df_p.geneID))][gene_features_df.species==spp_drug.split("-")[0]].set_index("gff_upmost_parent").final_name)
+
+        gene_names_SE = {"gene-B9J08_004248", "gene-B9J08_004896", "gene-B9J08_005552", "CAGL0J12034g", "AWP4", "CAGL0A00116g", "CAGL0C01078g", "Scer_NRG1"}
+        gene_names_SW = {"PDR1"}
+
+        gene_names_NE = {"Scer_NET1"}
+
+        genes_extra_large = {"CAGL0J12034g", "CAGL0A00116g", "CAGL0C01078g", "CAGL0C00253g"}
+        genes_extra_short = {"CAGL0K07502g", "CAGL0J00116g", "gene-B9J08_004896", "CAGL0J01727g", "Scer_NET1", "CAGL0J00105g"}
+
+        genes_super_extra_large = {"CAGL0I11011g"}
+
+        for geneID, gene_name in geneID_to_name.items():
+
+            # get coordinates
+            gene_r = df_p[df_p.geneID==geneID].iloc[0]
+            if gene_r.type_gene=="1 GWAS dataset": continue
+            x = gene_r.epsilon
+            y = gene_r[minus_log10pval_f]
+
+            # define multiplier
+            if gene_name in genes_super_extra_large: multiplier = 2.5
+            elif gene_name in genes_extra_large: multiplier = 2
+            elif gene_name in genes_extra_short: multiplier = 0.5
+            else: multiplier = 1
+
+            # define orientation
+            if gene_name in gene_names_SE:
+
+                dest_x = x + (0.05)*multiplier
+                dest_y = y - (0.4)*multiplier
+                text_aln = "left"      
+
+            elif gene_name in gene_names_SW:
+
+                dest_x = x - (0.05)*multiplier
+                dest_y = y - (0.4)*multiplier
+                text_aln = "right"      
+
+            elif gene_name in gene_names_NE:
+
+                dest_x = x + (0.05)*multiplier
+                dest_y = y + (0.4)*multiplier
+                text_aln = "left"      
+
+            # by defult NW
+            else: 
+                dest_x = x - (0.05)*multiplier
+                dest_y = y + (0.4)*multiplier
+                text_aln = "right"
+
+            # add line
+            plt.plot([x, dest_x], [y, dest_y], color=palette_tg[gene_r.type_gene], linestyle="--", linewidth=.7)
+            ax.text(dest_x, dest_y, gene_name.lstrip("gene-"), horizontalalignment=text_aln, color=palette_tg[gene_r.type_gene], fontsize=9)
+
+
+
+
+
+        # add line for p=0.05
+        for y in [0.1, 0.05]: ax.axhline(get_minus_log10pval(y), linewidth=.7, color="black", linestyle="--")
+
+        # customize legend
+        if Ir==1 and Ic==1: ax.legend(loc='upper left', bbox_to_anchor=(1.05, 0.8))
+        elif not ax.get_legend() is None: ax.get_legend().remove()
+
+        # define axes
+        if Ic==0: ax.set_ylabel({"pval_chi_square_phenotypes":"$-log\ p(X^2)$", "pval_GenoAndPheno_phenotypes":"$-log\ p(n_{Gt,Ph})$"}[pval_f])
+        else: 
+            ax.set_ylabel("")
+            ax.set_yticklabels([])
+
+        if (Ir==1 and Ic==1) or (Ir==0 and Ic==2): ax.set_xlabel("convergence level ($\epsilon$)")
+        else: ax.set_xlabel("")
+
+        if Ir==0 and Ic!=2: ax.set_xticklabels([])
+
+        # define title
+        spp_drug_short = "C. %s-%s"%(spp_drug.split("-")[0].split("_")[1], spp_drug.split("-")[1])
+
+        ntransitions_set = set(df_gwas_validation_all[(df_gwas_validation_all.min_support==70) & (df_gwas_validation_all.ASR_methods_phenotypes=="MPPA,DOWNPASS") & (df_gwas_validation_all.species_and_drug==spp_drug)].nodes_withPheno)
+        backbone_title = "%s\n(%i R<>S transitions)"%(spp_drug_short, next(iter(ntransitions_set)))
+
+        if Ir==0 and Ic==1: ax.set_title("Validation of high-confidence GWAS hits (considering %s)\n%s"%(hit_criteria, backbone_title), fontsize=10)
+        else: ax.set_title(backbone_title, fontsize=10)
+
+        # limits
+        lims_x = [0, max(df_gwas_validation_all.epsilon) + 0.1]; ax.set_xlim(lims_x)
+        lims_y = [0, get_minus_log10pval(0) + 0.5]; ax.set_ylim(lims_y)
+
+        # add numbers of genes with hits
+        for ypos, tg in [(0.5, "1 GWAS dataset"), (0.1, ">1 GWAS dataset")]:
+
+            df = df_p_all[df_p_all.type_gene==tg]
+
+            label = "%i/%i"%(sum(df.epsilon!=-1), len(df))
+            ax.text(0.87, ypos, label, color= palette_tg[tg], horizontalalignment='right', fontsize=10)
+
+
+
+
+          
+
+
+    plt.subplots_adjust(wspace=0.05,  hspace=0.25)
+    plt.show()
+    fig.savefig("%s/gwas_validation_scatter_%s_%s.pdf"%(PlotsDir, hit_criteria, pval_f), bbox_inches="tight")
+
+
+    #################

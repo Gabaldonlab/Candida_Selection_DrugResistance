@@ -9,6 +9,7 @@ import sys
 from ete3 import Tree
 import pandas as pd
 import multiprocessing as multiproc
+import numpy as np
 
 # get the cwd were all the scripts are 
 CWD = "/".join(__file__.split("/")[0:-1]); sys.path.insert(0, CWD)
@@ -124,10 +125,12 @@ if fun.file_is_empty(correct_treefile):
 
     # add a pseudocount of the branch length. This is necessary to account for unexisting branch lengths messing with the permutation testing
     pseudocount_dist = min([l.dist for l in tree.get_leaves() if l.dist>0])*0.1
+    print("add pseudocount_dist=%s to leaves..."%pseudocount_dist)
     for l in tree.get_leaves(): l.dist = l.dist + pseudocount_dist
 
     # add a pseudocount to the internal nodes if required
     if opt.add_pseudocount_dist_internal_nodes is True:
+        print("add pseudocount_dist=%s to internal nodes..."%pseudocount_dist)
         for n in tree.traverse(): 
             if n.is_leaf() is False and n.is_root() is False: n.dist = n.dist + pseudocount_dist
 

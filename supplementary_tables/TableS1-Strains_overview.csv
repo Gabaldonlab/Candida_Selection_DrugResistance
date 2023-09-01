@@ -1,0 +1,7 @@
+species	# strains	# clinical	# environmental	# other	# clades	median pairwise SNPs/kb
+C. glabrata	420	393	0	27	24	6.32
+C. auris	752	723	0	29	4	3.71
+C. tropicalis	89	77	12	0	3	4.28
+C. albicans	642	432	18	192	21	7.81
+C. parapsilosis	51	47	0	4	4	0.31
+C. orthopsilosis	33	33	0	0	5	18.17

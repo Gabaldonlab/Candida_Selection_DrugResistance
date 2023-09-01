@@ -45,6 +45,8 @@ ProcessedDataDir = "%s/ProcessedData_RecentEvolPaper"%CurDir; fun.make_folder(Pr
 manually_curated_data = "%s/manually_curated_data"%CurDir
 DataDir = "%s/data"%CurDir
 
+
+
 #%% LOAD PROCESSED DATASETS
 
 # map each species to different files or objects
@@ -137,7 +139,7 @@ gwas_table_df_low_confidence = fun.get_df_gwas_results_low_confidence(spp_drug_t
 #%% GENERATE TABLES
 
 # Table allStrainData
-df_allStrainData = fun.generate_table_allStrainData(metadata_df, species_to_srr_to_sampleID, species_to_tree, TablesDir, DataDir, ProcessedDataDir)
+df_allStrainData = fun.generate_table_allStrainData(metadata_df, species_to_srr_to_sampleID, species_to_tree, TablesDir, DataDir, ProcessedDataDir, threads)
 
 # Table Strain_metadata
 df_Strain_metadata = fun.generate_table_Strain_metadata(metadata_df, TablesDir, type_comp_to_df_pairwise_diff)
@@ -159,17 +161,49 @@ df_table_drugs_gwas = fun.get_table_Drugs_for_GWAS(filtering_stats_df, metadata_
 # table with all NR GWAS results
 gwas_table_df, gwas_results_df_more_than_1_spp_OGs = fun.get_Table_GroupsGWAS(df_gwas_filt, DataDir, "%s/get_Table_GroupsGWAS_data_nsyn_muts_NR"%ProcessedDataDir, TablesDir, gene_features_df, designed_GWAS_filters_df, type_muts)
 
-
 #%% GENERATE MERGED TABLES
-
-# Table Strains
-fun.get_merged_table_strains(df_allStrainData, species_to_tree, TablesDir, df_Strain_metadata, df_table_drugs_gwas, CurDir)
 
 # Table Selection
 fun.get_merged_table_selection(gene_features_df, selection_dfs_dict, df_enrichment_all, TablesDir)
 
 # Table GWAS
 fun.get_merged_table_GWAS(gwas_table_df, gwas_results_df_more_than_1_spp_OGs, gwas_table_df_low_confidence, TablesDir)
+
+# Table Strains (only can be run if ./pipeline_gwas_validation.py has been run)
+fun.get_merged_table_strains(df_allStrainData, species_to_tree, TablesDir, df_Strain_metadata, df_table_drugs_gwas, CurDir)
+
+
+#%% ANALYZE SERIAL ISOLATES
+
+# selection analysis
+fun.serial_isolates_selection_analysis(metadata_df, ProcessedDataDir, DataDir, PlotsDir, species_to_ref_genome, gene_features_df, species_to_gff, df_coverage_per_gene, selection_dfs_dict["under_selection"][0], selection_dfs_dict["all_genes"][0])
+
+#%% GWAS VALIDATION
+
+# this can only be run after everything else is done, and with previous running of ./pipeline_gwas_validation.py
+
+# keep genes GWAS hits
+gwas_table_df_genes = gwas_table_df[gwas_table_df.type_collapsing.isin({"genes", "domains", "none"})]
+gwas_results_df_more_than_1_spp_OGs_genes = gwas_results_df_more_than_1_spp_OGs[gwas_results_df_more_than_1_spp_OGs.type_collapsing.isin({"genes", "domains", "none"})]
+
+# add geneID
+gwas_table_df_genes["geneID"] = gwas_table_df_genes.apply(fun.get_geneID_gwas_hit, axis=1)
+gwas_results_df_more_than_1_spp_OGs_genes["geneID"] = gwas_results_df_more_than_1_spp_OGs_genes.apply(fun.get_geneID_gwas_hit, axis=1)
+
+
+# get GWAS validation
+wrong_spp_drug_combinations = {("Candida_glabrata", "VRC"), ("Candida_auris", "MIF")} # these had <5 pheno transitions, as shown by the previous analysis
+df_gwas_validation_all =  fun.get_df_gwas_validation_all(ProcessedDataDir, wrong_spp_drug_combinations, "%s/data_gwas_validation"%CurDir, gwas_table_df_genes)
+
+
+# plot GWAS validation results
+
+hit_criteria = "best gene hit" # "same grouping" or  "best gene hit"
+#fun.plot_gwas_validation_scatterplots(df_gwas_validation_all, ProcessedDataDir, hit_criteria, gwas_table_df_genes, gwas_results_df_more_than_1_spp_OGs_genes, PlotsDir)
+fun.plot_gwas_validation_scatterplots_one_pval(df_gwas_validation_all, ProcessedDataDir, hit_criteria, gwas_table_df_genes, gwas_results_df_more_than_1_spp_OGs_genes, PlotsDir, gene_features_df)
+
+    
+
 
 
 #%% GENERATE FIGURES
@@ -250,6 +284,7 @@ fun.plot_GWAS_AFresistance_ASR_phenotypes_tree_withGeneInfo_only_phenotypes(Data
 
 # Figure with all results
 fun.get_figure_GWAS_all_results(PlotsDir, df_gwas_filt)
+
 
 # Figures with trees affected by GWAS hits
 fun.get_figures_trees_with_association_info(DataDir, PlotsDir, species_to_gff, gene_features_df, metadata_df, designed_GWAS_filters_df, df_gwas_filt, spp_drug_to_gwas_df_file)
@@ -396,3 +431,24 @@ df = gwas_table_df_low_confidence[gwas_table_df_low_confidence.species=='Candida
 for I, r in df[df.biological_process_GO.apply(lambda x: "ergosterol" in x)][["drug", "group_name", "description"]].drop_duplicates().iterrows():
     
     print("\n", r.drug, r.description)
+
+# print repeated strains
+bs_to_runs = df_allStrainData.groupby("strain").apply(lambda d: set(d.Run))
+bs_to_runs_multiple = bs_to_runs[bs_to_runs.apply(len)>1]
+print("There are %i/%i strains that are in multiple runs. %.4f"%(len(bs_to_runs_multiple), len(bs_to_runs), len(bs_to_runs_multiple)/len(bs_to_runs)))
+
+# print strains that are equal
+df = type_comp_to_df_pairwise_diff["number_vars"]
+df = df[df.origin_sample!=df.target_sample]
+df_no_dif = df[df["diffent_positions"]==0]
+print("There are %i/%i comparisons that are different. %.4f pct"%(len(df_no_dif), len(df), (len(df_no_dif)/len(df))*100))
+
+#%% GRAVEYARD
+
+# check the overlap between the glabrata hits and the genes affected by azole-resistance mutations in Pais 2022
+df_GWAS_hits_all_shared = fun.get_tab_as_df_or_empty_df("%s/Tables_RecentEvolPaper/supplementary_tables/TableS3-High-confidence_GWAS_hits_>1_dataset.csv"%CurDir)
+
+glabrata_gene_IDs_gwas = set(df_GWAS_hits_all_shared[(df_GWAS_hits_all_shared.species=="Candida_glabrata") & (df_GWAS_hits_all_shared.drug!="MIF")].apply(fun.get_geneID_gwas_hit, axis=1))
+glabrata_gene_IDs_Pais2022 = set(pd.read_excel("%s/manually_curated_data/2022A_Pais-supplementary-table-1.xlsx"%CurDir, "Azole_resistant_exclusive").ORF)
+intersecting_genes = glabrata_gene_IDs_gwas.intersection(glabrata_gene_IDs_Pais2022)
+print("In Pais 2022 they detect %i genes with mutations exclusively in azole-resistant strains. From our GWAS genes that are in >1 dataset, there are %i/%i genes overlapping this set:\n%s"%(len(glabrata_gene_IDs_Pais2022), len(intersecting_genes), len(glabrata_gene_IDs_gwas), "\n".join(intersecting_genes)))

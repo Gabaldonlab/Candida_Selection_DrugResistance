@@ -1,0 +1,245 @@
+species_name	BioProject	Run	strain	paper_link	AMB_MIC	ITR_MIC	POS_MIC	VRC_MIC	FLC_resistance	AMB_resistance	ITR_resistance	POS_resistance	VRC_resistance
+Candida_auris	PRJNA549344	SRR9316720	RI-A112	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	1.0	0.25	0.12	2.0	R	I	I	R	R
+Candida_auris	PRJNA549344	SRR9316721	RICU18_A113	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	1.0	0.25	0.12	1.0	R	I	I	R	I
+Candida_auris	PRJNA549344	SRR9316722	RI-A114	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	1.0	0.5	0.12	2.0	R	I	R	R	R
+Candida_auris	PRJNA549344	SRR9316723	RICU19_A115	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	1.0	0.25	0.12	2.0	R	I	I	R	R
+Candida_auris	PRJNA549344	SRR9316726	RICU15_A110	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	0.5	0.25	0.06	1.0	R	S	I	I	I
+Candida_auris	PRJNA549344	SRR9316727	RICU9_A111	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	0.5	0.25	0.12	1.0	R	S	I	R	I
+Candida_auris	PRJNA549344	SRR9316728	RICU9_A116	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	1.0	0.25	0.12	2.0	R	I	I	R	R
+Candida_auris	PRJNA549344	SRR9316729	RICU5_A12	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	0.5	0.06	0.03	0.5	R	S	S	S	S
+Candida_auris	PRJNA549344	SRR9316735	SICU2_A97	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	1.0	0.25	0.12	2.0	R	I	I	R	R
+Candida_auris	PRJNA549344	SRR9316737	BJCA001	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	0.25	0.03	0.02	0.02	S	S	S	S	S
+Candida_auris	PRJNA549344	SRR9316738	RICU6_A14	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	0.5	0.12	0.03	0.5	R	S	S	S	S
+Candida_auris	PRJNA549344	SRR9316739	NICU2_A13	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	1.0	0.12	0.06	1.0	R	I	S	I	I
+Candida_auris	PRJNA549344	SRR9316741	NICU3_A15	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	0.5	0.12	0.06	0.5	R	S	S	I	S
+Candida_auris	PRJNA549344	SRR9316744	RICU2_A2	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	0.5	0.12	0.06	1.0	R	S	S	I	I
+Candida_auris	PRJNA549344	SRR9316745	NICU4_A19	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	0.5	0.12	0.06	1.0	R	S	S	I	I
+Candida_auris	PRJNA549344	SRR9316746	RICU7_A22	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	0.5	0.12	0.06	1.0	R	S	S	I	I
+Candida_auris	PRJNA549344	SRR9316747	NICU4_A20	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	1.0	0.25	0.06	4.0	R	I	I	I	R
+Candida_auris	PRJNA549344	SRR9316749	RICU7_A29	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	1.0	0.25	0.06	2.0	R	I	I	I	R
+Candida_auris	PRJNA549344	SRR9316751	NSICU1_A24	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	0.5	0.06	0.03	0.5	R	S	S	S	S
+Candida_auris	PRJNA549344	SRR9316754	RICU3_A3	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	0.5	0.06	0.03	0.5	R	S	S	S	S
+Candida_auris	PRJNA549344	SRR9316755	NSICU1_A31	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	1.0	0.5	0.06	2.0	R	I	R	I	R
+Candida_auris	PRJNA549344	SRR9316756	NICU5_A36	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	0.5	0.06	0.03	0.5	R	S	S	S	S
+Candida_auris	PRJNA549344	SRR9316762	NICU6_A41	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	0.5	0.06	0.03	0.5	R	S	S	S	S
+Candida_auris	PRJNA549344	SRR9316763	RICU2_A4	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	1.0	1.0	0.06	4.0	R	I	R	I	R
+Candida_auris	PRJNA549344	SRR9316765	RICU8_A38	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	0.5	0.06	0.03	0.5	R	S	S	S	S
+Candida_auris	PRJNA549344	SRR9316768	NICU8_A48	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	1.0	0.25	0.12	2.0	R	I	I	R	R
+Candida_auris	PRJNA549344	SRR9316769	RICU2_A5	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	2.0	0.25	0.06	1.0	R	R	I	I	I
+Candida_auris	PRJNA549344	SRR9316771	NICU9_A51	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	1.0	0.12	0.06	1.0	R	I	S	I	I
+Candida_auris	PRJNA549344	SRR9316772	RICU9_A52	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	1.0	0.25	0.12	2.0	R	I	I	R	R
+Candida_auris	PRJNA549344	SRR9316775	RICU10_A57	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	1.0	0.25	0.12	2.0	R	I	I	R	R
+Candida_auris	PRJNA549344	SRR9316776	NICU10_A58	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	1.0	0.25	0.12	2.0	R	I	I	R	R
+Candida_auris	PRJNA549344	SRR9316779	RICU4_A7	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	1.0	0.5	0.12	4.0	R	I	R	R	R
+Candida_auris	PRJNA549344	SRR9316780	SICU1_A66	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	1.0	0.5	0.25	2.0	R	I	R	R	R
+Candida_auris	PRJNA549344	SRR9316781	RICU9_A65	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	1.0	0.25	0.12	1.0	R	I	I	R	I
+Candida_auris	PRJNA549344	SRR9316785	RICU9_A61	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	1.0	0.25	0.12	2.0	R	I	I	R	R
+Candida_auris	PRJNA549344	SRR9316788	RICU1_A1	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	0.5	0.06	0.03	0.5	R	S	S	S	S
+Candida_auris	PRJNA549344	SRR9316789	RICU4_A10	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	1.0	0.25	0.12	2.0	R	I	I	R	R
+Candida_auris	PRJNA549344	SRR9316790	NICU15_A100	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	1.0	0.12	0.03	0.5	R	I	S	S	S
+Candida_auris	PRJNA549344	SRR9316791	NICU16_A101	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	1.0	0.12	0.03	1.0	R	I	S	S	I
+Candida_auris	PRJNA549344	SRR9316792	NICU16_A102	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	0.5	0.12	0.06	0.5	R	S	S	I	S
+Candida_auris	PRJNA549344	SRR9316793	NICU16_A103	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	0.5	0.25	0.06	1.0	R	S	I	I	I
+Candida_auris	PRJNA549344	SRR9316794	NICU16_A104	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	1.0	0.5	0.12	4.0	R	I	R	R	R
+Candida_auris	PRJNA549344	SRR9316795	RICU15_A105	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	1.0	0.25	0.12	1.0	R	I	I	R	I
+Candida_auris	PRJNA549344	SRR9316797	RICU16_A107	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	1.0	0.25	0.12	2.0	R	I	I	R	R
+Candida_auris	PRJNA549344	SRR9316798	RICU12_A80	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	1.0	0.25	0.12	2.0	R	I	I	R	R
+Candida_auris	PRJNA549344	SRR9316799	RICU11_A81	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	1.0	0.25	0.12	2.0	R	I	I	R	R
+Candida_auris	PRJNA549344	SRR9316801	RICU4_A8	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	0.5	0.12	0.06	1.0	R	S	S	I	I
+Candida_auris	PRJNA549344	SRR9316802	RICU11_A76	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	1.0	0.25	0.06	2.0	R	I	I	I	R
+Candida_auris	PRJNA549344	SRR9316803	NICU11_A77	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	1.0	0.25	0.12	2.0	R	I	I	R	R
+Candida_auris	PRJNA549344	SRR9316806	SICU1_A71	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	1.0	0.25	0.12	2.0	R	I	I	R	R
+Candida_auris	PRJNA549344	SRR9316807	SICU1_A72	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	1.0	0.25	0.12	2.0	R	I	I	R	R
+Candida_auris	PRJNA549344	SRR9316808	RICU13_A86	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	1.0	0.12	0.03	0.5	R	I	S	S	S
+Candida_auris	PRJNA549344	SRR9316809	RICU13_A85	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	1.0	0.25	0.12	2.0	R	I	I	R	R
+Candida_auris	PRJNA549344	SRR9316810	RICU13_A83	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	1.0	0.25	0.12	2.0	R	I	I	R	R
+Candida_auris	PRJNA549344	SRR9316812	NICU13_A93	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	1.0	0.12	0.06	1.0	R	I	S	I	I
+Candida_auris	PRJNA549344	SRR9316815	SICU2_A89	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	1.0	0.12	0.03	0.5	R	I	S	S	S
+Candida_auris	PRJNA549344	SRR9316816	RICU14_A95	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8183536/	1.0	0.12	0.06	1.0	R	I	S	I	I
+Candida_auris	PRJNA640677	SRR18432267	20-24	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9295560/	2.5	0.625	0.31	1.5	R	R	R	R	I
+Candida_auris	PRJNA640677	SRR18432268	20-23	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9295560/	3.0	0.625	0.185	1.5	R	R	R	R	I
+Candida_auris	PRJNA640677	SRR18432269	20-22	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9295560/	1.5	0.625	0.31	1.5	R	I	R	R	I
+Candida_auris	PRJNA640677	SRR18432270	20-21	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9295560/	3.0	0.625	0.31	1.5	R	R	R	R	I
+Candida_auris	PRJNA640677	SRR18432271	20-20	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9295560/	1.5	0.625	0.31	1.5	R	I	R	R	I
+Candida_auris	PRJNA640677	SRR18432272	20-19	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9295560/	1.5	0.56	0.28	1.25	R	I	R	R	I
+Candida_auris	PRJNA640677	SRR18432274	20-17	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9295560/	2.5	0.375	0.12	1.5	R	R	I	R	I
+Candida_auris	PRJNA640677	SRR18432275	20-34	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9295560/	1.5	0.75	0.375	2.0	R	I	R	R	R
+Candida_auris	PRJNA640677	SRR18432276	20-32	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9295560/	3.0	0.75	0.625	8.0	R	R	R	R	R
+Candida_auris	PRJNA640677	SRR18432277	20-31	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9295560/	3.0	0.75	0.375	12.0	R	R	R	R	R
+Candida_auris	PRJNA640677	SRR18432278	20-30	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9295560/	2.5	0.75	0.375	8.0	R	R	R	R	R
+Candida_auris	PRJNA640677	SRR18432279	20-29	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9295560/	2.5	0.625	0.31	1.5	R	R	R	R	I
+Candida_auris	PRJNA640677	SRR18432280	20-28	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9295560/	1.5	0.56	0.28	4.5	R	I	R	R	R
+Candida_auris	PRJNA640677	SRR18432281	20-27	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9295560/	2.5	1.125	0.56	1.5	R	R	R	R	I
+Candida_auris	PRJNA640677	SRR18432282	20-26	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9295560/	2.375	0.56	0.53	1.5	R	R	R	R	I
+Candida_auris	PRJNA640677	SRR18432283	20-25	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9295560/	1.5	0.56	0.28	1.25	R	I	R	R	I
+Candida_auris	PRJNA640677	SRR18432284	20-16	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9295560/	2.375	0.31	0.09	0.75	R	R	I	I	I
+Candida_auris	PRJNA640677	SRR18432285	20-15	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9295560/	1.375	0.375	0.12	1.5	R	I	I	R	I
+Candida_auris	PRJNA655187	SRR12667428	FG_GE10	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7919374/					R	R			R
+Candida_auris	PRJNA655187	SRR12667429	FG_GE9	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7919374/					R	R			R
+Candida_auris	PRJNA655187	SRR12667430	FG_GE8	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7919374/					R	R			R
+Candida_auris	PRJNA655187	SRR12667431	FG_GE7	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7919374/					R	R			R
+Candida_auris	PRJNA655187	SRR12667432	FG_GE6	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7919374/					R	R			R
+Candida_auris	PRJNA655187	SRR12667433	FG_GE5	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7919374/					R	R			R
+Candida_auris	PRJNA655187	SRR12667434	FG_GE4	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7919374/					R	R			R
+Candida_auris	PRJNA655187	SRR12667435	FG_GE3	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7919374/					R	R			R
+Candida_auris	PRJNA655187	SRR12667436	FG_GE2	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7919374/					R	R			R
+Candida_auris	PRJNA655187	SRR12667437	FG_GE1	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7919374/					R	R			R
+Candida_auris	PRJNA693430	SRR13710779	CAS52	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10132836/	8.0			0.06	I	R			S
+Candida_auris	PRJNA693430	SRR13710812	CAS1	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10132836/	8.0			0.06	I	R			S
+Candida_auris	PRJNA693430	SRR21943166	CAS121	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10132836/	0.5			0.06	R	S			S
+Candida_auris	PRJNA693430	SRR21943167	CAS120	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10132836/	32.0			0.25	I	R			S
+Candida_auris	PRJNA693430	SRR21943168	CAS119	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10132836/	2.0	1.0	0.12	8.0	R	R	R	R	R
+Candida_auris	PRJNA693430	SRR21943171	CAS116	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10132836/	4.0	16.0	8.0	8.0	R	R	R	R	R
+Candida_auris	PRJNA693430	SRR21943172	CAS115	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10132836/	1.0	16.0	2.0	8.0	R	I	R	R	R
+Candida_auris	PRJNA693430	SRR21943173	CAS59	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10132836/	2.0	0.12	0.015	0.25	R	R	S	S	S
+Candida_auris	PRJNA693430	SRR21943175	CAS113	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10132836/	4.0	1.0	1.0	1.0	R	R	R	R	I
+Candida_auris	PRJNA693430	SRR21943176	CAS112	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10132836/	2.0	0.06	0.015	0.25	R	R	S	S	S
+Candida_auris	PRJNA693430	SRR21943177	CAS111	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10132836/	4.0	16.0	8.0	8.0	R	R	R	R	R
+Candida_auris	PRJNA693430	SRR21943179	CAS109	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10132836/	2.0	16.0	8.0	8.0	R	R	R	R	R
+Candida_auris	PRJNA693430	SRR21943181	CAS107	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10132836/	1.0	0.5	0.12	8.0	R	I	R	R	R
+Candida_auris	PRJNA693430	SRR21943182	CAS105	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10132836/	2.0	8.0	8.0	8.0	R	R	R	R	R
+Candida_auris	PRJNA693430	SRR21943184	CAS58	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10132836/	2.0	0.06	0.015	0.25	R	R	S	S	S
+Candida_auris	PRJNA693430	SRR21943195	CAS57	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10132836/	2.0	0.06	0.03	0.25	R	R	S	S	S
+Candida_auris	PRJNA693430	SRR21943200	CAS131	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10132836/	2.0	16.0	8.0	8.0	R	R	R	R	R
+Candida_auris	PRJNA693430	SRR21943201	CAS130	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10132836/	2.0	1.0	0.25	8.0	R	R	R	R	R
+Candida_auris	PRJNA693430	SRR21943202	CAS129	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10132836/	2.0	0.06	0.015	0.12	R	R	S	S	S
+Candida_auris	PRJNA693430	SRR21943204	CAS127	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10132836/	4.0	0.25	0.06	0.5	R	R	I	I	S
+Candida_auris	PRJNA693430	SRR21943205	CAS126	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10132836/	1.0	0.12	0.03	0.5	R	I	S	S	S
+Candida_auris	PRJNA693430	SRR21943207	CAS124	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10132836/	1.0	0.12	0.03	0.5	R	I	S	S	S
+Candida_auris	PRJNA693430	SRR21943208	CAS123	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10132836/	2.0	0.12	0.03	0.25	R	R	S	S	S
+Candida_auris	PRJNA693430	SRR21943211	CAS86	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10132836/	8.0			0.06	I	R			S
+Candida_auris	PRJNA693430	SRR21943212	CAS87	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10132836/	2.0	0.25	0.06	1.0	R	R	I	I	I
+Candida_auris	PRJNA693430	SRR21943223	CAS77	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10132836/	2.0	0.25	0.12	8.0	R	R	I	R	R
+Candida_auris	PRJNA693430	SRR21943229	CAS55	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10132836/	2.0	16.0	8.0	8.0	R	R	R	R	R
+Candida_auris	PRJNA693430	SRR21943230	CAS73	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10132836/	8.0			0.06	R	R			S
+Candida_auris	PRJNA693430	SRR21943234	CAS69	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10132836/	1.0	0.06	0.03	0.12	R	I	S	S	S
+Candida_auris	PRJNA693430	SRR21943236	CAS67	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10132836/	2.0	0.12	0.015	0.25	R	R	S	S	S
+Candida_auris	PRJNA737309	SRR14802832	3225_40	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.002				R	S			
+Candida_auris	PRJNA737309	SRR14802834	2980_63	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.008				R	S			
+Candida_auris	PRJNA737309	SRR14802835	2859_37	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.38				R	S			
+Candida_auris	PRJNA737309	SRR14802836	2736_81	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.5				R	S			
+Candida_auris	PRJNA737309	SRR14802837	2723_38	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.5				R	S			
+Candida_auris	PRJNA737309	SRR14802838	2678_36	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.25				R	S			
+Candida_auris	PRJNA737309	SRR14802839	2634_41	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.38				R	S			
+Candida_auris	PRJNA737309	SRR14802840	2609_35	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.38				R	S			
+Candida_auris	PRJNA737309	SRR14802842	2547_51	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	4.0				R	R			
+Candida_auris	PRJNA737309	SRR14802843	2546_62	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.25				R	S			
+Candida_auris	PRJNA737309	SRR14802844	4000	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	2.0				R	R			
+Candida_auris	PRJNA737309	SRR14802845	2526_42	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.016				R	S			
+Candida_auris	PRJNA737309	SRR14802846	2491_79	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.5				R	S			
+Candida_auris	PRJNA737309	SRR14802848	6196	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	3.0				R	R			
+Candida_auris	PRJNA737309	SRR14802849	6057	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	4.0				I	R			
+Candida_auris	PRJNA737309	SRR14802850	5948	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	2.0				R	R			
+Candida_auris	PRJNA737309	SRR14802858	5716	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	8.0				R	R			
+Candida_auris	PRJNA737309	SRR14802872	6241_97	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.19				R	S			
+Candida_auris	PRJNA737309	SRR14802873	5953_93	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.38				R	S			
+Candida_auris	PRJNA737309	SRR14802874	5946_91	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.38				R	S			
+Candida_auris	PRJNA737309	SRR14802875	5714	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	3.0				R	R			
+Candida_auris	PRJNA737309	SRR14802876	5771_92	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.5				R	S			
+Candida_auris	PRJNA737309	SRR14802877	5734_5	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.25				R	S			
+Candida_auris	PRJNA737309	SRR14802878	5704_4	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.38				R	S			
+Candida_auris	PRJNA737309	SRR14802879	5625_3	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.25				R	S			
+Candida_auris	PRJNA737309	SRR14802880	5624_2	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.19				R	S			
+Candida_auris	PRJNA737309	SRR14802882	5585_46	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.5				R	S			
+Candida_auris	PRJNA737309	SRR14802883	5580_66	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.5				R	S			
+Candida_auris	PRJNA737309	SRR14802885	5561_57	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.19				R	S			
+Candida_auris	PRJNA737309	SRR14802886	5591	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	2.0				R	R			
+Candida_auris	PRJNA737309	SRR14802887	5547_45	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.19				R	S			
+Candida_auris	PRJNA737309	SRR14802888	5543_54	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.5				R	S			
+Candida_auris	PRJNA737309	SRR14802889	5483_43	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.19				R	S			
+Candida_auris	PRJNA737309	SRR14802891	5386_58	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.125				R	S			
+Candida_auris	PRJNA737309	SRR14802892	5305_44	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.19				R	S			
+Candida_auris	PRJNA737309	SRR14802894	5233_75	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	2.0				R	R			
+Candida_auris	PRJNA737309	SRR14802895	5222_59	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.5				R	S			
+Candida_auris	PRJNA737309	SRR14802896	5173_28	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	2.0				R	R			
+Candida_auris	PRJNA737309	SRR14802898	5116_74	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	2.0				R	R			
+Candida_auris	PRJNA737309	SRR14802899	5109_29	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.125				R	S			
+Candida_auris	PRJNA737309	SRR14802900	5006_96	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.5				R	S			
+Candida_auris	PRJNA737309	SRR14802901	4944_56	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.125				R	S			
+Candida_auris	PRJNA737309	SRR14802903	4934_87	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.5				R	S			
+Candida_auris	PRJNA737309	SRR14802904	4930_73	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.25				R	S			
+Candida_auris	PRJNA737309	SRR14802905	4928_61	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.047				R	S			
+Candida_auris	PRJNA737309	SRR14802906	4926_60	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.38				R	S			
+Candida_auris	PRJNA737309	SRR14802907	4925_94	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.25				R	S			
+Candida_auris	PRJNA737309	SRR14802908	5588	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	2.0				R	R			
+Candida_auris	PRJNA737309	SRR14802911	4888_50	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.38				R	S			
+Candida_auris	PRJNA737309	SRR14802912	4845_72	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.19				R	S			
+Candida_auris	PRJNA737309	SRR14802913	4836_68	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.5				R	S			
+Candida_auris	PRJNA737309	SRR14802914	4742_88	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.5				R	S			
+Candida_auris	PRJNA737309	SRR14802915	4642_47	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.25				R	S			
+Candida_auris	PRJNA737309	SRR14802916	4603_48	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.19				R	S			
+Candida_auris	PRJNA737309	SRR14802918	4414_52	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.19				R	S			
+Candida_auris	PRJNA737309	SRR14802919	5425	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	2.0				R	R			
+Candida_auris	PRJNA737309	SRR14802920	4152_33	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.38				R	S			
+Candida_auris	PRJNA737309	SRR14802921	3788_90	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.5				R	S			
+Candida_auris	PRJNA737309	SRR14802922	3770_34	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.5				R	S			
+Candida_auris	PRJNA737309	SRR14802924	3706_89	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.25				R	S			
+Candida_auris	PRJNA737309	SRR14802925	3589_31	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.38				R	S			
+Candida_auris	PRJNA737309	SRR14802926	3562_78	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	4.0				R	R			
+Candida_auris	PRJNA737309	SRR14802930	4645	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	2.0				R	R			
+Candida_auris	PRJNA737309	SRR14802931	3511_84	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.023				R	S			
+Candida_auris	PRJNA737309	SRR14802932	3411_85	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.064				R	S			
+Candida_auris	PRJNA737309	SRR14802933	3406_32	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.094				R	S			
+Candida_auris	PRJNA737309	SRR14802935	3402_71	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.064				R	S			
+Candida_auris	PRJNA737309	SRR14802937	3338_83	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.38				R	S			
+Candida_auris	PRJNA737309	SRR14802938	3289_82	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.38				R	S			
+Candida_auris	PRJNA737309	SRR14802940	3269_64	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	0.19				R	S			
+Candida_auris	PRJNA737309	SRR14802944	5715	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	4.0				R	R			
+Candida_auris	PRJNA737309	SRR14802945	3775	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	2.0				R	R			
+Candida_auris	PRJNA737309	SRR14802946	3732	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8370198/	2.0				R	R			
+Candida_glabrata	PRJEB40738	ERR4669757	2018-F1-188-B	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8622182/	0.5	0.12	0.25	0.03	S	S	S	S	S
+Candida_glabrata	PRJEB40738	ERR4669779	2018-F5-18	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8622182/	1.0	0.25	0.5	0.12	S	I	S	S	S
+Candida_glabrata	PRJEB40738	ERR4669782	2018-F6-160	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8622182/	1.0	0.25	0.5	0.12	S	I	S	S	S
+Candida_glabrata	PRJEB40738	ERR4669784	2018-F6-162	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8622182/	0.5	1.0	2.0	1.0	R	S	S	R	I
+Candida_glabrata	PRJEB40738	ERR4669787	2018-F6-165	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8622182/	0.5	0.25	0.5	0.12	S	S	S	S	S
+Candida_glabrata	PRJEB40738	ERR4669789	2018-F6-167	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8622182/	1.0	1.0	2.0	2.0	R	I	S	R	R
+Candida_glabrata	PRJNA589840	SRR14381442	CG_UHB_10	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9769630/					R				I
+Candida_glabrata	PRJNA589840	SRR14381444	CG_UHB_08	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9769630/					S				I
+Candida_glabrata	PRJNA589840	SRR14381445	CG_UHB_07	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9769630/					R				I
+Candida_glabrata	PRJNA589840	SRR14381447	CG_UHB_05	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9769630/					S				S
+Candida_glabrata	PRJNA589840	SRR14381448	CG_UHB_30	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9769630/					S				S
+Candida_glabrata	PRJNA589840	SRR14381449	CG_UHB_29	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9769630/					S				I
+Candida_glabrata	PRJNA589840	SRR14381453	CG_UHB_26	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9769630/					S				S
+Candida_glabrata	PRJNA589840	SRR14381454	CG_UHB_25	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9769630/					R				I
+Candida_glabrata	PRJNA589840	SRR14381455	CG_UHB_24	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9769630/					S				S
+Candida_glabrata	PRJNA589840	SRR14381457	CG_UHB_21	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9769630/					S				S
+Candida_glabrata	PRJNA589840	SRR14381459	CG_UHB_23	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9769630/					R				I
+Candida_glabrata	PRJNA589840	SRR14381460	CG_UHB_20	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9769630/					R				I
+Candida_glabrata	PRJNA589840	SRR14381461	CG_UHB_19	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9769630/					R				R
+Candida_glabrata	PRJNA589840	SRR14381465	CG_UHB_14	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9769630/					S				I
+Candida_glabrata	PRJNA589840	SRR14381466	CG_UHB_13	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9769630/					S				I
+Candida_glabrata	PRJNA589840	SRR14381467	CG_UHB_16	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9769630/					R				I
+Candida_glabrata	PRJNA589840	SRR14381468	CG_UHB_12	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9769630/					R				I
+Candida_glabrata	PRJNA589840	SRR14381469	CG_UHB_11	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9769630/					R				I
+Candida_glabrata	PRJNA589840	SRR14381470	CG_UHB_02	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9769630/					R				R
+Candida_glabrata	PRJNA669061	SRR12825197	CG97c	https://academic.oup.com/genetics/article/221/1/iyac031/6535245					S				
+Candida_glabrata	PRJNA669061	SRR12825198	CG97b	https://academic.oup.com/genetics/article/221/1/iyac031/6535245					S				
+Candida_glabrata	PRJNA669061	SRR12825200	CG97a	https://academic.oup.com/genetics/article/221/1/iyac031/6535245					S				
+Candida_glabrata	PRJNA669061	SRR12825201	CG93k	https://academic.oup.com/genetics/article/221/1/iyac031/6535245					S				
+Candida_glabrata	PRJNA669061	SRR12825202	CG93j	https://academic.oup.com/genetics/article/221/1/iyac031/6535245					R				
+Candida_glabrata	PRJNA669061	SRR12825203	CG93i	https://academic.oup.com/genetics/article/221/1/iyac031/6535245					R				
+Candida_glabrata	PRJNA669061	SRR12825204	CG93h	https://academic.oup.com/genetics/article/221/1/iyac031/6535245					R				
+Candida_glabrata	PRJNA669061	SRR12825205	CG93e	https://academic.oup.com/genetics/article/221/1/iyac031/6535245					S				
+Candida_glabrata	PRJNA669061	SRR12825206	CG93d	https://academic.oup.com/genetics/article/221/1/iyac031/6535245					S				
+Candida_glabrata	PRJNA669061	SRR12825207	CG93c	https://academic.oup.com/genetics/article/221/1/iyac031/6535245					S				
+Candida_glabrata	PRJNA669061	SRR12825208	CG93b	https://academic.oup.com/genetics/article/221/1/iyac031/6535245					S				
+Candida_glabrata	PRJNA669061	SRR12825209	CG93a	https://academic.oup.com/genetics/article/221/1/iyac031/6535245					S				
+Candida_glabrata	PRJNA669061	SRR12825211	CG84h	https://academic.oup.com/genetics/article/221/1/iyac031/6535245					S				
+Candida_glabrata	PRJNA669061	SRR12825212	CG84g	https://academic.oup.com/genetics/article/221/1/iyac031/6535245					S				
+Candida_glabrata	PRJNA669061	SRR12825213	CG84f	https://academic.oup.com/genetics/article/221/1/iyac031/6535245					S				
+Candida_glabrata	PRJNA669061	SRR12825217	CG48f	https://academic.oup.com/genetics/article/221/1/iyac031/6535245					S				
+Candida_glabrata	PRJNA669061	SRR12825219	CG48a	https://academic.oup.com/genetics/article/221/1/iyac031/6535245					S				
+Candida_glabrata	PRJNA669061	SRR12825220	CG191f	https://academic.oup.com/genetics/article/221/1/iyac031/6535245					S				
+Candida_glabrata	PRJNA669061	SRR12825222	CG191e	https://academic.oup.com/genetics/article/221/1/iyac031/6535245					S				
+Candida_glabrata	PRJNA669061	SRR12825223	CG191d	https://academic.oup.com/genetics/article/221/1/iyac031/6535245					S				
+Candida_glabrata	PRJNA669061	SRR12825224	CG191c	https://academic.oup.com/genetics/article/221/1/iyac031/6535245					S				
+Candida_glabrata	PRJNA669061	SRR12825225	CG191b	https://academic.oup.com/genetics/article/221/1/iyac031/6535245					S				
+Candida_glabrata	PRJNA669061	SRR12825226	CG191a	https://academic.oup.com/genetics/article/221/1/iyac031/6535245					S				
+Candida_glabrata	PRJNA669061	SRR12825227	CG18b	https://academic.oup.com/genetics/article/221/1/iyac031/6535245					S				
+Candida_glabrata	PRJNA669061	SRR12825228	CG18a	https://academic.oup.com/genetics/article/221/1/iyac031/6535245					S				
+Candida_glabrata	PRJNA669061	SRR12825230	CG107a	https://academic.oup.com/genetics/article/221/1/iyac031/6535245					S				
+Candida_glabrata	PRJNA699880	SRR13648884	ISTB218	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9258547/				4.0	R				R
+Candida_glabrata	PRJNA699880	SRR13648885	ISTA29	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9258547/				0.25	S				S
+Candida_glabrata	PRJNA738673	SRR14844978	73281	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9662024/					R				
+Candida_glabrata	PRJNA738673	SRR14844979	67367	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9662024/					R				
+Candida_glabrata	PRJNA738673	SRR14844980	50570	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9662024/					R				

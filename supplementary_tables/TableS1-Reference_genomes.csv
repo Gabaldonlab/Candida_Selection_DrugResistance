@@ -1,0 +1,7 @@
+species	gDNA source	mtDNA source	CGD gene features source	CGD GO annotations file
+C. glabrata	strain CBS138 (version s02-m07-r35 from CGD)	strain CBS138 (version s02-m07-r35 from CGD)	strain CBS138 (version s02-m07-r35)	gene_association.20190313.cgd.gz
+C. auris	strain B8441 (accession GCA_002759435.2 from NCBI)	strain B8441 (accession ASM716870v1 from NCBI)	strain B8441 (version s01-m01-r11)	gene_association.20200901.cgd.gz
+C. albicans	haplotype A in strain SC5314 (version A22-s07-m01-r110 from CGD)	haplotype A in strain SC5314 (version A22-s07-m01-r110 from CGD)	strain SC5314 (version A22-s07-m01-r110)	gene_association.20200607.cgd.gz
+C. tropicalis	strain MYA-3404 (accession GCF_000006335.3 from NCBI)	strain MYA-3404 (accession GCF_000006335.3 from NCBI)	strain MYA-3404 (file from 28/06/2021)	gene_association.20200901.cgd.gz
+C. parapsilosis 	strain CDC317 (accession GCA_000182765.2)	strain CDC317 (accession GCA_000182765.2)	strain CDC317 (version s01-m03-r45)	gene_association.20200901.cgd.gz
+C. orthopsilosis	strain Co 90-125 (accession GCF_000315875.1 from NCBI)	strain MCO456 (accession NC_006972.1 from NCBI)	strain Co 90-125 (version 2013_12_11)	gene_association.20200901.cgd.gz
